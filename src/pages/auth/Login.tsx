@@ -7,7 +7,7 @@ const Login = () => {
     // Implement login logic here, e.g., call API, handle response, etc.
   };
   return (
-    <AuthLayout>
+    <AuthLayout title="login">
       <h1 className="text-4xl font-bold text-black mb-2">
         Log in to your account
       </h1>

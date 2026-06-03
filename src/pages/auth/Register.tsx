@@ -7,7 +7,7 @@ const Register = () => {
   };
 
   return (
-    <AuthLayout>
+    <AuthLayout title="register">
       <h1 className="text-4xl font-bold text-black mb-2">
         Create your account
       </h1>

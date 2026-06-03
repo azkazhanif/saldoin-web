@@ -1,11 +1,10 @@
 import { useState } from "react";
 import Button from "../../atoms/button/Button";
-import Link from "../../atoms/form/Link";
 import CheckboxLabel from "../../molecules/form/CheckboxLabel";
 import InputLabel from "../../molecules/form/InputLabel";
 
 interface LoginFormProps {
-    onSubmitLogin: (data: any) => void;
+  onSubmitLogin: (data: any) => void;
 }
 
 const LoginForm = ({ onSubmitLogin }: LoginFormProps) => {
@@ -24,7 +23,14 @@ const LoginForm = ({ onSubmitLogin }: LoginFormProps) => {
   };
   return (
     <form onSubmit={handleSubmit} className="mt-4 mb-4">
-      <InputLabel id="email" name="email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <InputLabel
+        id="email"
+        name="email"
+        label="Email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
       <InputLabel
         id="password"
         name="password"
@@ -34,8 +40,14 @@ const LoginForm = ({ onSubmitLogin }: LoginFormProps) => {
         onChange={(e) => setPassword(e.target.value)}
       />
       <div className="mb-2 flex items-center justify-between">
-        <CheckboxLabel id="remember" name="remember" label="Remember me" value={remember} onChange={(e) => setRemember(e.target.checked)} />
-        <Link href="/forgot-password">Forgot password?</Link>
+        <CheckboxLabel
+          id="remember"
+          name="remember"
+          label="Remember me"
+          value={remember}
+          onChange={(e) => setRemember(e.target.checked)}
+        />
+        <a href="/forgot-password">Forgot password?</a>
       </div>
       <Button width="full" type="submit" variant="primary">
         Log In
