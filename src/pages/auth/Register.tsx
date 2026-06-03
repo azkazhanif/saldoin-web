@@ -1,5 +1,5 @@
 import AuthLayout from "../../layouts/AuthLayout";
-import RegisterForm from "../../components/organisms/form/RegisterForm";
+import RegisterForm from "../../components/organisms/auth/RegisterForm";
 
 const Register = () => {
   const handleRegister = (data: any) => {

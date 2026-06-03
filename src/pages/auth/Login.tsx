@@ -1,4 +1,4 @@
-import LoginForm from "../../components/organisms/form/LoginForm";
+import LoginForm from "../../components/organisms/auth/LoginForm";
 import AuthLayout from "../../layouts/AuthLayout";
 
 const Login = () => {

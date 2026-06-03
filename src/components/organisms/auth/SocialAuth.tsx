@@ -1,5 +1,5 @@
-import SocialButton from "../atoms/button/SocialButton";
 import { FaApple, FaFacebook, FaGoogle } from "react-icons/fa6";
+import SocialButton from "../../atoms/button/SocialButton";
 
 const SocialAuth = () => {
   return (
