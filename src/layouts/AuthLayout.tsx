@@ -1,5 +1,6 @@
 import React from "react";
 import SocialAuth from "../components/organisms/auth/SocialAuth";
+import authImage from "../assets/auth-pic.png";
 import { Link } from "react-router";
 
 const AuthLayout = ({
@@ -13,7 +14,16 @@ const AuthLayout = ({
 }) => {
   return (
     <div className="h-screen grid grid-cols-1 md:grid-cols-2">
-      <div className="hidden md:flex items-center justify-center bg-blue"></div>
+      <div className="hidden md:flex flex-col items-center justify-center bg-blue">
+        <img src={authImage} alt="Auth Background" />
+        <p className="text-white font-bold text-xl md:text-2xl mb-2 text-center">
+          Easy to control your finances
+        </p>
+        <p className="w-md text-white text-center">
+          Manage your money, track your expenses, and achieve your financial
+          goals with ease.
+        </p>
+      </div>
       <div className="flex flex-col items-center justify-center">
         <div className="w-md">
           {children}
