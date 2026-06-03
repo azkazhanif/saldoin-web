@@ -6,6 +6,8 @@ import { createBrowserRouter, RouterProvider } from "react-router";
 import Login from "./pages/auth/Login.tsx";
 import Register from "./pages/auth/Register.tsx";
 import ForgotPassword from "./pages/auth/ForgotPassword.tsx";
+import VerifyOtp from "./pages/auth/VerifyOtp.tsx";
+import NewPassword from "./pages/auth/NewPassword.tsx";
 
 const router = createBrowserRouter([
   {
@@ -26,6 +28,14 @@ const router = createBrowserRouter([
       {
         path: "forgot-password",
         element: <ForgotPassword />,
+      },
+      {
+        path: "verify-otp",
+        element: <VerifyOtp />,
+      },
+      {
+        path: "new-password",
+        element: <NewPassword />,
       },
     ],
   },
