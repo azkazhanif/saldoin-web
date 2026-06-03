@@ -24,7 +24,7 @@ const InputLabel = ({
 }: InputLabelProps) => {
   return (
     <div className="mb-2">
-      <Label htmlFor={id} label={label} />
+      <Label htmlFor={id} label={label} className="mb-1" />
       <Input
         type={type}
         id={id}

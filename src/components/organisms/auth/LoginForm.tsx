@@ -2,6 +2,8 @@ import { useState } from "react";
 import Button from "../../atoms/button/Button";
 import CheckboxLabel from "../../molecules/form/CheckboxLabel";
 import InputLabel from "../../molecules/form/InputLabel";
+import { Link } from "react-router";
+import InputPasswordLabel from "../../molecules/form/InputPasswordLabel";
 
 interface LoginFormProps {
   onSubmitLogin: (data: any) => void;
@@ -31,11 +33,10 @@ const LoginForm = ({ onSubmitLogin }: LoginFormProps) => {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
       />
-      <InputLabel
+      <InputPasswordLabel
         id="password"
         name="password"
         label="Password"
-        type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
@@ -47,7 +48,12 @@ const LoginForm = ({ onSubmitLogin }: LoginFormProps) => {
           value={remember}
           onChange={(e) => setRemember(e.target.checked)}
         />
-        <a href="/forgot-password">Forgot password?</a>
+        <Link
+          to="/auth/forgot-password"
+          className="text-blue text-sm font-normal"
+        >
+          Forgot password?
+        </Link>
       </div>
       <Button width="full" type="submit" variant="primary">
         Log In

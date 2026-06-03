@@ -1,9 +1,10 @@
 import { useState } from "react";
 import Button from "../../atoms/button/Button";
 import InputLabel from "../../molecules/form/InputLabel";
+import InputPasswordLabel from "../../molecules/form/InputPasswordLabel";
 
 interface RegisterFormProps {
-    onSubmitRegister: (data: any) => void;
+  onSubmitRegister: (data: any) => void;
 }
 
 const RegisterForm = ({ onSubmitRegister }: RegisterFormProps) => {
@@ -28,21 +29,33 @@ const RegisterForm = ({ onSubmitRegister }: RegisterFormProps) => {
   };
   return (
     <form onSubmit={handleSubmit} className="mt-4 mb-4">
-      <InputLabel id="name" name="name" label="Name" type="text" value={name} onChange={(e) => setName(e.target.value)} />
-      <InputLabel id="email" name="email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       <InputLabel
+        id="name"
+        name="name"
+        label="Name"
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <InputLabel
+        id="email"
+        name="email"
+        label="Email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <InputPasswordLabel
         id="password"
         name="password"
         label="Password"
-        type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
-      <InputLabel
+      <InputPasswordLabel
         id="verifyPassword"
         name="verifyPassword"
         label="Verify Password"
-        type="password"
         value={verifyPassword}
         onChange={(e) => setVerifyPassword(e.target.value)}
       />
