@@ -8,6 +8,7 @@ import Register from "./pages/auth/Register.tsx";
 import ForgotPassword from "./pages/auth/ForgotPassword.tsx";
 import VerifyOtp from "./pages/auth/VerifyOtp.tsx";
 import NewPassword from "./pages/auth/NewPassword.tsx";
+import Dashboard from "./pages/main/Dashboard.tsx";
 
 const router = createBrowserRouter([
   {
@@ -39,6 +40,10 @@ const router = createBrowserRouter([
       },
     ],
   },
+  {
+    path: "dashboard",
+    element: <Dashboard />,
+  }
 ]);
 
 createRoot(document.getElementById("root")!).render(
