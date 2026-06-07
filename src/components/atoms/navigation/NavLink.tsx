@@ -1,9 +1,9 @@
-import React from "react";
-import { useLocation } from "react-router";
+import type { ComponentType } from "react";
+import { Link, useLocation } from "react-router";
 
 interface NavLinkProps {
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
   label: string;
 }
 
@@ -15,8 +15,8 @@ const NavLink = ({ href, icon: Icon, label }: NavLinkProps) => {
 
   return (
     <li className="flex-1 md:flex-initial">
-      <a
-        href={href || "#"}
+      <Link
+        to={href || "#"}
         className={`text-black font-medium text-xs md:text-sm flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 rounded-md transition-all justify-center md:justify-start ${
           isActive 
             ? "text-blue bg-blue/10" 
@@ -25,7 +25,7 @@ const NavLink = ({ href, icon: Icon, label }: NavLinkProps) => {
       >
         <Icon className="w-5 h-5 md:w-6 md:h-6" />
         <span className="text-[10px] md:text-sm">{label}</span>
-      </a>
+      </Link>
     </li>
   );
 };

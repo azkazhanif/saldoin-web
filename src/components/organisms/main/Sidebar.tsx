@@ -2,19 +2,20 @@ import { useState, useEffect, useRef } from "react";
 import { BiMoneyWithdraw } from "react-icons/bi";
 import { BsWallet } from "react-icons/bs";
 import { GoHome } from "react-icons/go";
-import { 
-  IoListOutline, 
-  IoSettingsOutline, 
-  IoLogOutOutline, 
-  IoChevronUpOutline, 
-  IoChevronDownOutline 
+import {
+  IoListOutline,
+  IoSettingsOutline,
+  IoLogOutOutline,
+  IoChevronUpOutline,
+  IoChevronDownOutline,
 } from "react-icons/io5";
 import NavLink from "../../atoms/navigation/NavLink";
+import { Link, useNavigate } from "react-router";
 import { useAuth } from "../../../contexts/AuthContext";
-
 
 const Sidebar = () => {
   const { profile, user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -24,7 +25,10 @@ const Sidebar = () => {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsMenuOpen(false);
       }
     };
@@ -35,7 +39,7 @@ const Sidebar = () => {
   }, []);
 
   const handleSettingsClick = () => {
-    console.log("Navigate to Settings");
+    navigate("/settings/categories");
     setIsMenuOpen(false);
   };
 
@@ -48,33 +52,46 @@ const Sidebar = () => {
     }
   };
 
-
   return (
     <aside className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-100 flex flex-row items-center justify-between px-4 z-50 md:relative md:bottom-auto md:left-auto md:right-auto md:h-screen md:sticky md:top-0 md:flex-col md:justify-between md:p-4 md:border-r md:border-t-0">
-      
       {/* Brand & Main Menu Container */}
       <div className="flex flex-row md:flex-col items-center md:items-start justify-between md:justify-start w-full md:gap-6 flex-1 md:flex-initial">
-        
         {/* Brand Logo - Desktop Only */}
-        <a href="/dashboard" className="hidden md:block text-blue font-bold text-2xl px-2">
+        <Link
+          to="/dashboard"
+          className="hidden md:block text-blue font-bold text-2xl px-2"
+        >
           Saldoin
-        </a>
-        
+        </Link>
+
         {/* Navigation Menu */}
         <div className="w-full">
-          <p className="hidden md:block text-gray-400 font-bold text-xs uppercase tracking-wider px-2 mb-2">Main Menu</p>
+          <p className="hidden md:block text-gray-400 font-bold text-xs uppercase tracking-wider px-2 mb-2">
+            Main Menu
+          </p>
           <ul className="flex flex-row md:flex-col items-center md:items-stretch justify-around md:justify-start gap-1 w-full">
             <NavLink href="/dashboard" icon={GoHome} label="Dashboard" />
             <NavLink href="/wallet" icon={BsWallet} label="Wallet" />
-            <NavLink href="/transactions" icon={IoListOutline} label="Transactions" />
-            <NavLink href="/categories" icon={IoListOutline} label="Categories" />
+            <NavLink
+              href="/categories"
+              icon={IoSettingsOutline}
+              label="Categories"
+            />
+            <NavLink
+              href="/transactions"
+              icon={IoListOutline}
+              label="Transactions"
+            />
             <NavLink href="/budget" icon={BiMoneyWithdraw} label="Budget" />
           </ul>
         </div>
       </div>
 
       {/* Bottom Section: Profile Card & Dropdown */}
-      <div className="relative shrink-0 ml-4 md:ml-0 md:w-full" ref={dropdownRef}>
+      <div
+        className="relative shrink-0 ml-4 md:ml-0 md:w-full"
+        ref={dropdownRef}
+      >
         {/* Dropdown Popup */}
         {isMenuOpen && (
           <div className="absolute bottom-full right-0 md:left-0 md:right-0 mb-2 w-48 md:w-auto bg-white border border-gray-100 rounded-xl shadow-lg py-2 z-50 flex flex-col gap-1 transition-all duration-200">
@@ -109,7 +126,12 @@ const Sidebar = () => {
               {userInitial}
             </div>
             <div className="hidden md:block text-left">
-              <p className="text-black font-bold text-sm leading-none truncate max-w-[120px]" title={displayName}>{displayName}</p>
+              <p
+                className="text-black font-bold text-sm leading-none truncate max-w-[120px]"
+                title={displayName}
+              >
+                {displayName}
+              </p>
               <p className="text-gray-400 text-xs mt-1">Premium Account</p>
             </div>
           </div>
