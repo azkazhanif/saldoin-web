@@ -20,7 +20,7 @@ interface WalletItem {
   type: string;
   provider: string;
   balance: number;
-  accountNumber: string;
+  initialBalance: number;
 }
 
 const Wallet = () => {
@@ -34,14 +34,22 @@ const Wallet = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
-  // Form states
+  // Add Form states
   const [newWallet, setNewWallet] = useState({
     name: "",
     type: "Bank",
     provider: "BCA",
     balance: 0,
-    accountNumber: "",
+  });
+
+  // Edit Form states
+  const [editWallet, setEditWallet] = useState({
+    name: "",
+    type: "Bank",
+    provider: "BCA",
+    balance: 0,
   });
 
   const loadData = async () => {
@@ -90,7 +98,7 @@ const Wallet = () => {
                 : "Cash",
           provider: w.provider,
           balance: currentBalance,
-          accountNumber: w.account_number || "",
+          initialBalance: Number(w.initial_balance),
         };
       });
 
@@ -123,15 +131,8 @@ const Wallet = () => {
     e.preventDefault();
     if (!user) return;
 
-    // Prepare wallet account format
-    let formattedAccount = newWallet.accountNumber;
-    if (newWallet.type === "Bank" && newWallet.accountNumber) {
-      formattedAccount = `•••• •••• •••• ${newWallet.accountNumber.slice(-4)}`;
-    } else if (newWallet.type === "E-Wallet" && newWallet.accountNumber) {
-      formattedAccount = `${newWallet.accountNumber.slice(0, 4)} •••• ${newWallet.accountNumber.slice(-4)}`;
-    } else if (newWallet.type === "Cash") {
-      formattedAccount = "Cash Wallet";
-    }
+    // Use provider name as default name if name is empty
+    const finalName = newWallet.name.trim() || newWallet.provider;
 
     const dbType =
       newWallet.type === "Bank"
@@ -143,11 +144,11 @@ const Wallet = () => {
     try {
       const { error } = await supabase.from("wallets").insert({
         user_id: user.id,
-        name: newWallet.name,
+        name: finalName,
         type: dbType,
         provider: newWallet.provider,
         initial_balance: newWallet.balance,
-        account_number: formattedAccount,
+        account_number: "", // No longer input by user, saved as empty string
         is_active: true,
       });
 
@@ -163,11 +164,50 @@ const Wallet = () => {
         type: "Bank",
         provider: "BCA",
         balance: 0,
-        accountNumber: "",
       });
     } catch (err) {
       console.error(err);
       alert("Failed to save wallet.");
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedWallet || !user) return;
+
+    // Use provider name as default name if name is empty
+    const finalName = editWallet.name.trim() || editWallet.provider;
+
+    const dbType =
+      editWallet.type === "Bank"
+        ? "bank"
+        : editWallet.type === "E-Wallet"
+          ? "ewallet"
+          : "cash";
+
+    try {
+      const { error } = await supabase
+        .from("wallets")
+        .update({
+          name: finalName,
+          type: dbType,
+          provider: editWallet.provider,
+          initial_balance: editWallet.balance,
+        })
+        .eq("id", selectedWallet.id);
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      await loadData();
+      setIsEditing(false);
+      setIsDetailOpen(false);
+      setSelectedWallet(null);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update wallet.");
     }
   };
 
@@ -243,40 +283,36 @@ const Wallet = () => {
                 onClick={() => {
                   setSelectedWallet(wallet);
                   setIsConfirmingDelete(false);
+                  setIsEditing(false);
                   setIsDetailOpen(true);
                 }}
                 className={`${gradientClass} rounded-3xl p-5 shadow-sm relative overflow-hidden h-44 flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 cursor-pointer`}
               >
                 <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-xl animate-pulse" />
 
-                <div className="flex justify-between items-start z-10">
-                  <div>
-                    <p className="text-white/60 text-[10px] font-bold uppercase tracking-wider">
-                      {wallet.name}
-                    </p>
-                    <p className="text-white font-extrabold text-lg md:text-xl mt-0.5 leading-tight">
-                      {formatCurrency(wallet.balance)}
-                    </p>
-                  </div>
+                {/* Top Row: Provider and Type badge */}
+                <div className="flex justify-between items-center z-10">
+                  <span className="text-white font-extrabold text-sm tracking-wide">
+                    {wallet.provider}
+                  </span>
                   <span className="text-[9px] bg-white/10 border border-white/20 rounded-full px-2 py-0.5 font-bold uppercase flex-shrink-0">
                     {wallet.type}
                   </span>
                 </div>
 
-                <div className="z-10">
-                  <p className="text-white/40 text-[8px] tracking-widest font-mono uppercase font-bold">
-                    Account Number
-                  </p>
-                  <p className="text-white font-bold text-xs md:text-sm font-mono tracking-wider mt-0.5">
-                    {wallet.accountNumber}
+                {/* Middle Row: Current Balance */}
+                <div className="z-10 py-1">
+                  <p className="text-white font-extrabold text-xl md:text-2xl leading-none">
+                    {formatCurrency(wallet.balance)}
                   </p>
                 </div>
 
-                <div className="flex justify-between items-center z-10">
-                  <span className="text-white/80 font-extrabold text-xs">
-                    {wallet.provider}
+                {/* Bottom Row: Wallet Name & Status */}
+                <div className="flex justify-between items-end z-10">
+                  <span className="text-white/70 font-semibold text-xs leading-none max-w-[70%] truncate">
+                    {wallet.name}
                   </span>
-                  <span className="text-white/40 text-[8px] uppercase font-bold tracking-widest">
+                  <span className="text-white/40 text-[8px] uppercase font-bold tracking-widest leading-none">
                     Active
                   </span>
                 </div>
@@ -320,11 +356,10 @@ const Wallet = () => {
               {/* Wallet Name */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-bold text-gray-500">
-                  Wallet Name
+                  Wallet Name (Optional)
                 </label>
                 <input
                   type="text"
-                  required
                   placeholder="e.g. BCA Tabungan, Dompet Saku"
                   value={newWallet.name}
                   onChange={(e) =>
@@ -349,12 +384,10 @@ const Wallet = () => {
                         : type === "Bank"
                           ? "BCA"
                           : "GoPay";
-                    const accountNumber = type === "Cash" ? "Cash Wallet" : "";
                     setNewWallet({
                       ...newWallet,
                       type,
                       provider,
-                      accountNumber,
                     });
                   }}
                   className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white"
@@ -392,34 +425,6 @@ const Wallet = () => {
                       </>
                     )}
                   </select>
-                </div>
-              )}
-
-              {/* Account Number (Dynamic description) */}
-              {newWallet.type !== "Cash" && (
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-gray-500">
-                    {newWallet.type === "Bank"
-                      ? "Account Number"
-                      : "Phone Number"}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder={
-                      newWallet.type === "Bank"
-                        ? "e.g. 1234567890"
-                        : "e.g. 0812345678"
-                    }
-                    value={newWallet.accountNumber}
-                    onChange={(e) =>
-                      setNewWallet({
-                        ...newWallet,
-                        accountNumber: e.target.value,
-                      })
-                    }
-                    className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white"
-                  />
                 </div>
               )}
 
@@ -469,7 +474,136 @@ const Wallet = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-xs p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-md border border-gray-100 flex flex-col gap-5 animate-in zoom-in-95 duration-200">
             
-            {!isConfirmingDelete ? (
+            {isEditing ? (
+              <>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-black font-extrabold text-lg">Edit Wallet</h3>
+                    <p className="text-gray-400 text-xs mt-0.5">Modify wallet details</p>
+                  </div>
+                  <button
+                    onClick={() => setIsEditing(false)}
+                    className="p-1.5 rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-black cursor-pointer"
+                  >
+                    <IoCloseOutline className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
+                  {/* Wallet Name */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-gray-500">
+                      Wallet Name (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. BCA Utama"
+                      value={editWallet.name}
+                      onChange={(e) =>
+                        setEditWallet({ ...editWallet, name: e.target.value })
+                      }
+                      className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white"
+                    />
+                  </div>
+
+                  {/* Wallet Type */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-gray-500">
+                      Wallet Type
+                    </label>
+                    <select
+                      value={editWallet.type}
+                      onChange={(e) => {
+                        const type = e.target.value;
+                        const provider =
+                          type === "Cash"
+                            ? "Cash"
+                            : type === "Bank"
+                              ? "BCA"
+                              : "GoPay";
+                        setEditWallet({
+                          ...editWallet,
+                          type,
+                          provider,
+                        });
+                      }}
+                      className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white"
+                    >
+                      <option value="Bank">Bank Account</option>
+                      <option value="E-Wallet">E-Wallet</option>
+                      <option value="Cash">Cash / Dompet</option>
+                    </select>
+                  </div>
+
+                  {/* Provider */}
+                  {editWallet.type !== "Cash" && (
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-gray-500">
+                        Provider
+                      </label>
+                      <select
+                        value={editWallet.provider}
+                        onChange={(e) =>
+                          setEditWallet({ ...editWallet, provider: e.target.value })
+                        }
+                        className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white"
+                      >
+                        {editWallet.type === "Bank" ? (
+                          <>
+                            <option value="BCA">BCA</option>
+                            <option value="Mandiri">Mandiri</option>
+                            <option value="BNI">BNI</option>
+                            <option value="Jago">Jago</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="GoPay">GoPay</option>
+                            <option value="OVO">OVO</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Initial Balance */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-gray-500">
+                      Initial Balance
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      placeholder="e.g. 500000"
+                      value={editWallet.balance}
+                      onChange={(e) =>
+                        setEditWallet({
+                          ...editWallet,
+                          balance: Number(e.target.value),
+                        })
+                      }
+                      className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white"
+                    />
+                  </div>
+
+                  {/* Form Buttons */}
+                  <div className="flex gap-3 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditing(false)}
+                      className="flex-1 py-2.5 rounded-xl border border-gray-200 text-black hover:bg-gray-50 text-xs font-bold transition-all cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 py-2.5 rounded-xl bg-blue hover:bg-blue-600 text-white text-xs font-bold transition-all cursor-pointer shadow-md shadow-blue/10"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : !isConfirmingDelete ? (
               <>
                 <div className="flex justify-between items-start">
                   <div>
@@ -496,26 +630,20 @@ const Wallet = () => {
                   }`}
                 >
                   <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-xl" />
-                  <div className="flex justify-between items-start z-10">
-                    <div>
-                      <p className="text-white/60 text-[10px] font-bold uppercase tracking-wider">{selectedWallet.name}</p>
-                      <p className="text-white font-extrabold text-lg md:text-xl mt-0.5 leading-tight">
-                        {formatCurrency(selectedWallet.balance)}
-                      </p>
-                    </div>
+                  <div className="flex justify-between items-center z-10">
+                    <span className="text-white font-extrabold text-sm tracking-wide">{selectedWallet.provider}</span>
                     <span className="text-[9px] bg-white/10 border border-white/20 rounded-full px-2 py-0.5 font-bold uppercase">
                       {selectedWallet.type}
                     </span>
                   </div>
-                  <div className="z-10">
-                    <p className="text-white/40 text-[8px] tracking-widest font-mono uppercase font-bold">Account Number</p>
-                    <p className="text-white font-bold text-xs md:text-sm font-mono tracking-wider mt-0.5">
-                      {selectedWallet.accountNumber}
+                  <div className="z-10 py-1">
+                    <p className="text-white font-extrabold text-xl md:text-2xl leading-none">
+                      {formatCurrency(selectedWallet.balance)}
                     </p>
                   </div>
-                  <div className="flex justify-between items-center z-10">
-                    <span className="text-white/80 font-extrabold text-xs">{selectedWallet.provider}</span>
-                    <span className="text-white/40 text-[8px] uppercase font-bold tracking-widest">Active</span>
+                  <div className="flex justify-between items-end z-10">
+                    <span className="text-white/70 font-semibold text-xs leading-none max-w-[70%] truncate">{selectedWallet.name}</span>
+                    <span className="text-white/40 text-[8px] uppercase font-bold tracking-widest leading-none">Active</span>
                   </div>
                 </div>
 
@@ -534,8 +662,8 @@ const Wallet = () => {
                     <span className="text-black font-extrabold">{selectedWallet.type}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400 font-bold text-xs">Account Number</span>
-                    <span className="text-black font-bold font-mono text-xs">{selectedWallet.accountNumber}</span>
+                    <span className="text-gray-400 font-bold text-xs">Initial Balance</span>
+                    <span className="text-black font-extrabold">{formatCurrency(selectedWallet.initialBalance)}</span>
                   </div>
                 </div>
 
@@ -546,7 +674,22 @@ const Wallet = () => {
                     onClick={() => setIsConfirmingDelete(true)}
                     className="flex-1 py-2.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold transition-all cursor-pointer flex items-center justify-center"
                   >
-                    Delete Wallet
+                    Delete
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditWallet({
+                        name: selectedWallet.name,
+                        type: selectedWallet.type,
+                        provider: selectedWallet.provider,
+                        balance: selectedWallet.initialBalance,
+                      });
+                      setIsEditing(true);
+                    }}
+                    className="flex-1 py-2.5 rounded-xl border border-blue text-blue hover:bg-blue/5 text-xs font-bold transition-all cursor-pointer flex items-center justify-center"
+                  >
+                    Edit
                   </button>
                   <button
                     type="button"
