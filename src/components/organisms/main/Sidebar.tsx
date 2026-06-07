@@ -63,7 +63,7 @@ const Sidebar = () => {
       </div>
 
       {/* Bottom Section: Profile Card & Dropdown */}
-      <div className="relative flex-shrink-0 ml-4 md:ml-0 md:w-full" ref={dropdownRef}>
+      <div className="relative shrink-0 ml-4 md:ml-0 md:w-full" ref={dropdownRef}>
         {/* Dropdown Popup */}
         {isMenuOpen && (
           <div className="absolute bottom-full right-0 md:left-0 md:right-0 mb-2 w-48 md:w-auto bg-white border border-gray-100 rounded-xl shadow-lg py-2 z-50 flex flex-col gap-1 transition-all duration-200">
