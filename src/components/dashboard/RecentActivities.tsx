@@ -47,7 +47,7 @@ const RecentActivities: React.FC<RecentActivitiesProps> = ({ data }) => {
         <p className="text-gray-400 text-xs mt-0.5">Transactions from your account</p>
       </div>
 
-      <div className="flex-1 overflow-y-auto max-h-[220px] pr-1 flex flex-col gap-4">
+      <div className="flex-grow overflow-y-auto h-64 pr-1 flex flex-col gap-4">
         {data.length > 0 ? (
           data.map((activity) => {
             const IconComponent = iconMap[activity.iconName] || IoCashOutline;

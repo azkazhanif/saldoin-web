@@ -42,6 +42,26 @@ export interface DashboardWallet {
   provider: string;
 }
 
+export interface BudgetWarningItem {
+  id: string;
+  categoryName: string;
+  iconName: string;
+  color: string;
+  bgColorClass: string;
+  spent: number;
+  limit: number;
+  percentage: number;
+  status: "over" | "warning";
+}
+
+export interface TopWalletItem {
+  id: string;
+  name: string;
+  provider: string;
+  balance: number;
+  transactionCount: number;
+}
+
 // Helper to resolve background color class based on category hex or Tailwind class
 export const getBgColorClass = (color: string) => {
   if (!color) return "bg-gray-50 text-gray-500";
@@ -56,28 +76,17 @@ export const getBgColorClass = (color: string) => {
   return `${color}/10 text-${color.replace("bg-", "")}`;
 };
 
-// Historical monthly overview base data (updated dynamically for June)
-const baseMonthlyData = [
-  { name: "Jul", income: 12000000, outcome: 8000000 },
-  { name: "Aug", income: 13500000, outcome: 8500000 },
-  { name: "Sep", income: 14000000, outcome: 9000000 },
-  { name: "Oct", income: 15000000, outcome: 9500000 },
-  { name: "Nov", income: 16500000, outcome: 11000000 },
-  { name: "Dec", income: 18000000, outcome: 13000000 },
-  { name: "Jan", income: 15500000, outcome: 10000000 },
-  { name: "Feb", income: 16000000, outcome: 9500000 },
-  { name: "Mar", income: 17200000, outcome: 10200000 },
-  { name: "Apr", income: 18500000, outcome: 11000000 },
-  { name: "May", income: 19000000, outcome: 10500000 },
-  { name: "Jun", income: 0, outcome: 0 },
-];
-
 export const useDashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [categories, setCategories] = useState<DashboardCategory[]>([]);
   const [wallets, setWallets] = useState<DashboardWallet[]>([]);
+  const [budgets, setBudgets] = useState<any[]>([]);
+
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -107,6 +116,15 @@ export const useDashboard = () => {
         .order("date", { ascending: false });
 
       if (txError) throw txError;
+
+      // 4. Fetch Budgets
+      const { data: budgetsData, error: budgetError } = await supabase
+        .from("budgets")
+        .select("*, category:categories(*)")
+        .eq("month", currentMonth)
+        .eq("year", currentYear);
+
+      if (budgetError) throw budgetError;
 
       // Map categories
       const loadedCats: DashboardCategory[] = (categoriesData || []).map((cat) => ({
@@ -155,45 +173,88 @@ export const useDashboard = () => {
       setCategories(loadedCats);
       setWallets(loadedWallets);
       setTransactions(loadedTxs);
+      setBudgets(budgetsData || []);
     } catch (err) {
       console.error("Error loading dashboard info:", err);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, currentMonth, currentYear]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // Compute metrics
+  // Compute metrics (excluding transfers)
   const totalIncome = transactions
-    .filter(t => t.type === "income")
+    .filter(t => t.type === "income" && !t.category.toLowerCase().includes("transfer"))
     .reduce((sum, t) => sum + t.amount, 0);
 
   const totalOutcome = transactions
-    .filter(t => t.type === "outcome")
+    .filter(t => t.type === "outcome" && !t.category.toLowerCase().includes("transfer"))
     .reduce((sum, t) => sum + t.amount, 0);
 
   const totalSaving = Math.max(0, totalIncome - totalOutcome);
 
-  // Compute monthly data dynamically for June
-  const junIncome = transactions
-    .filter(t => t.type === "income" && (t.date.includes("-06-") || t.date.includes("Jun")))
-    .reduce((sum, t) => sum + t.amount, 0);
+  // Compute dynamic monthly data overview
+  const getMonthlyOverview = (): MonthlyChartItem[] => {
+    const monthlyData: Record<string, { name: string; income: number; outcome: number; sortKey: string }> = {};
 
-  const junOutcome = transactions
-    .filter(t => t.type === "outcome" && (t.date.includes("-06-") || t.date.includes("Jun")))
-    .reduce((sum, t) => sum + t.amount, 0);
+    transactions.forEach(t => {
+      // Exclude transfers
+      if (t.category.toLowerCase().includes("transfer")) return;
 
-  const monthlyChartData: MonthlyChartItem[] = baseMonthlyData.map(m => {
-    if (m.name === "Jun") {
-      return { ...m, income: junIncome, outcome: junOutcome };
+      // Parse date
+      let dateObj: Date;
+      if (t.date.includes("-")) {
+        const parts = t.date.split("-");
+        dateObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      } else {
+        dateObj = new Date(t.date);
+      }
+
+      if (isNaN(dateObj.getTime())) return;
+
+      const monthName = dateObj.toLocaleDateString("en-GB", { month: "short" });
+      const yearName = dateObj.toLocaleDateString("en-GB", { year: "2-digit" });
+      const displayName = `${monthName} '${yearName}`; // e.g. "Jun '26"
+      const sortKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}`;
+
+      if (!monthlyData[sortKey]) {
+        monthlyData[sortKey] = {
+          name: displayName,
+          income: 0,
+          outcome: 0,
+          sortKey: sortKey
+        };
+      }
+
+      if (t.type === "income") {
+        monthlyData[sortKey].income += t.amount;
+      } else if (t.type === "outcome") {
+        monthlyData[sortKey].outcome += t.amount;
+      }
+    });
+
+    const sortedKeys = Object.keys(monthlyData).sort();
+    
+    if (sortedKeys.length === 0) {
+      const now = new Date();
+      const monthName = now.toLocaleDateString("en-GB", { month: "short" });
+      const yearName = now.toLocaleDateString("en-GB", { year: "2-digit" });
+      return [{ name: `${monthName} '${yearName}`, income: 0, outcome: 0 }];
     }
-    return m;
-  });
 
-  // Calculate 7 days of daily expenses dynamically
+    return sortedKeys.map(key => ({
+      name: monthlyData[key].name,
+      income: monthlyData[key].income,
+      outcome: monthlyData[key].outcome
+    }));
+  };
+
+  const monthlyChartData = getMonthlyOverview();
+
+  // Calculate 7 days of daily expenses dynamically (excluding transfers)
   const getDailyExpenses = (): DailyExpenseItem[] => {
     const daily: Record<string, number> = {};
     for (let i = 6; i >= 0; i--) {
@@ -203,7 +264,7 @@ export const useDashboard = () => {
       daily[dateStr] = 0;
     }
 
-    transactions.filter(t => t.type === "outcome").forEach(t => {
+    transactions.filter(t => t.type === "outcome" && !t.category.toLowerCase().includes("transfer")).forEach(t => {
       let txDateStr = "";
       if (t.date.includes("-")) {
         const parts = t.date.split("-");
@@ -250,6 +311,48 @@ export const useDashboard = () => {
       bgColorClass,
     };
   });
+
+  // Calculate budget warnings (spent >= 80% of budget)
+  const budgetWarnings: BudgetWarningItem[] = budgets.map((b) => {
+    const categoryTransactions = transactions.filter(
+      (t) => t.type === "outcome" &&
+             t.category === b.category?.name &&
+             t.date.includes(`-${String(currentMonth).padStart(2, '0')}-`) &&
+             !t.category.toLowerCase().includes("transfer")
+    );
+    const spent = categoryTransactions.reduce((sum, t) => sum + t.amount, 0);
+    const limit = Number(b.amount);
+    const percentage = limit > 0 ? (spent / limit) * 100 : 0;
+    
+    return {
+      id: b.id,
+      categoryName: b.category?.name || "Lain-lain",
+      iconName: b.category?.icon || "IoCashOutline",
+      color: b.category?.color || "bg-blue",
+      bgColorClass: getBgColorClass(b.category?.color || ""),
+      spent,
+      limit,
+      percentage: Math.round(percentage),
+      status: percentage >= 100 ? ("over" as const) : ("warning" as const),
+    };
+  }).filter(item => item.percentage >= 80)
+    .sort((a, b) => b.percentage - a.percentage);
+
+  // Compute top wallets based on transaction count in the current month
+  const topWallets: TopWalletItem[] = wallets.map((w) => {
+    const walletTransactions = transactions.filter(
+      (t) => t.walletId === w.id &&
+             t.date.includes(`-${String(currentMonth).padStart(2, '0')}-`)
+    );
+    return {
+      id: w.id,
+      name: w.name,
+      provider: w.provider,
+      balance: w.balance,
+      transactionCount: walletTransactions.length,
+    };
+  }).sort((a, b) => b.transactionCount - a.transactionCount)
+    .slice(0, 3);
 
   const addTransaction = async (params: {
     title: string;
@@ -395,6 +498,8 @@ export const useDashboard = () => {
     monthlyChartData,
     dailyExpensesData,
     recentActivities,
+    budgetWarnings,
+    topWallets,
     refetch: loadData,
     addTransaction,
     transferFunds,

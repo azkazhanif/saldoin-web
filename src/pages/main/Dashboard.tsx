@@ -6,6 +6,8 @@ import OverviewChart from "../../components/dashboard/OverviewChart";
 import QuickActions from "../../components/dashboard/QuickActions";
 import DailyExpensesChart from "../../components/dashboard/DailyExpensesChart";
 import RecentActivities from "../../components/dashboard/RecentActivities";
+import BudgetWarnings from "../../components/dashboard/BudgetWarnings";
+import TopWallets from "../../components/dashboard/TopWallets";
 import {
   IoTrendingUpOutline,
   IoTrendingDownOutline,
@@ -23,6 +25,8 @@ const Dashboard: React.FC = () => {
     monthlyChartData,
     dailyExpensesData,
     recentActivities,
+    budgetWarnings,
+    topWallets,
     addTransaction,
     transferFunds,
   } = useDashboard();
@@ -76,16 +80,21 @@ const Dashboard: React.FC = () => {
           iconBgClass="bg-blue/10 text-blue"
         />
 
+        {/* Left Column (spans 2 columns on desktop) */}
         <div className="md:col-span-2 flex flex-col gap-6">
-          {/* Monthly Comparison Chart (spans 2 columns) */}
+          {/* Monthly Comparison Chart */}
           <OverviewChart data={monthlyChartData} />
 
-          {/* Daily Expenses Chart Card (spans 2 columns) */}
+          {/* Daily Expenses Chart Card */}
           <DailyExpensesChart data={dailyExpensesData} />
+
+          {/* Budget Warnings Widget */}
+          <BudgetWarnings warnings={budgetWarnings} />
         </div>
 
+        {/* Right Column (spans 1 column on desktop) */}
         <div className="md:col-span-1 flex flex-col gap-6">
-          {/* Quick Actions Card (spans 1 column) */}
+          {/* Quick Actions Card */}
           <QuickActions
             categories={categories}
             wallets={wallets}
@@ -93,8 +102,11 @@ const Dashboard: React.FC = () => {
             transferFunds={transferFunds}
           />
 
-          {/* Recent Activity Card (spans 1 column) */}
+          {/* Recent Activity Card */}
           <RecentActivities data={recentActivities} />
+
+          {/* Top Use Wallets Widget */}
+          <TopWallets wallets={topWallets} />
         </div>
       </div>
     </MainLayout>
