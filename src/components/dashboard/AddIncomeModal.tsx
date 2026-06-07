@@ -1,0 +1,208 @@
+import React, { useState, useEffect } from "react";
+import { IoCloseOutline } from "react-icons/io5";
+import type { DashboardCategory, DashboardWallet } from "../../hooks/useDashboard";
+
+interface AddIncomeModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  categories: DashboardCategory[];
+  wallets: DashboardWallet[];
+  onSubmit: (data: {
+    title: string;
+    amount: number;
+    categoryId: string;
+    walletId: string;
+    date: string;
+  }) => Promise<void>;
+}
+
+const AddIncomeModal: React.FC<AddIncomeModalProps> = ({
+  isOpen,
+  onClose,
+  categories,
+  wallets,
+  onSubmit,
+}) => {
+  const [title, setTitle] = useState("");
+  const [amount, setAmount] = useState<number | "">("");
+  const [categoryId, setCategoryId] = useState("");
+  const [walletId, setWalletId] = useState("");
+  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const incomeCategories = categories.filter((c) => c.type === "income");
+
+  useEffect(() => {
+    if (isOpen) {
+      setTitle("");
+      setAmount("");
+      setDate(new Date().toISOString().split("T")[0]);
+      setError("");
+      
+      if (incomeCategories.length > 0) {
+        setCategoryId(incomeCategories[0].id);
+      }
+      if (wallets.length > 0) {
+        setWalletId(wallets[0].id);
+      }
+    }
+  }, [isOpen, categories, wallets]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) {
+      setError("Please fill in the title.");
+      return;
+    }
+    if (!amount || Number(amount) <= 0) {
+      setError("Please enter a valid amount.");
+      return;
+    }
+    if (!categoryId) {
+      setError("Please select a category.");
+      return;
+    }
+    if (!walletId) {
+      setError("Please select a wallet.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    try {
+      await onSubmit({
+        title,
+        amount: Number(amount),
+        categoryId,
+        walletId,
+        date,
+      });
+      onClose();
+    } catch (err: any) {
+      setError(err.message || "Failed to add income transaction.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-md border border-gray-100 flex flex-col gap-4 animate-in zoom-in-95 duration-200">
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-black font-extrabold text-lg">Add Income</h3>
+            <p className="text-gray-400 text-xs mt-0.5">Register an incoming cash flow</p>
+          </div>
+          <button 
+            onClick={onClose}
+            className="p-1.5 rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-black cursor-pointer"
+          >
+            <IoCloseOutline className="w-5 h-5" />
+          </button>
+        </div>
+
+        {error && (
+          <div className="p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-xs font-semibold">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {/* Title */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-bold text-gray-500">Transaction Note</label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Gaji Bulanan, Freelance"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white"
+            />
+          </div>
+
+          {/* Amount */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-bold text-gray-500">Amount (IDR)</label>
+            <input
+              type="number"
+              required
+              placeholder="e.g. 2500000"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value === "" ? "" : Number(e.target.value))}
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white"
+            />
+          </div>
+
+          {/* Category selection */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-bold text-gray-500">Income Category</label>
+            <select
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white"
+            >
+              {incomeCategories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Wallet selection */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-bold text-gray-500">Target Wallet</label>
+            <select
+              value={walletId}
+              onChange={(e) => setWalletId(e.target.value)}
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white"
+            >
+              {wallets.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name} (Balance: Rp {w.balance.toLocaleString("id-ID")})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Date */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-bold text-gray-500">Transaction Date</label>
+            <input
+              type="date"
+              required
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white"
+            />
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex gap-3 mt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="flex-1 py-2.5 rounded-xl border border-gray-200 text-black hover:bg-gray-50 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 py-2.5 rounded-xl bg-blue hover:bg-blue-600 text-white text-xs font-bold transition-all cursor-pointer shadow-md shadow-blue/10 disabled:opacity-50 flex items-center justify-center gap-1.5"
+            >
+              {loading ? "Saving..." : "Save Income"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default AddIncomeModal;

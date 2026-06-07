@@ -26,6 +26,22 @@ export interface DailyExpenseItem {
   amount: number;
 }
 
+export interface DashboardCategory {
+  id: string;
+  name: string;
+  type: "income" | "outcome";
+  color: string;
+  bgColor: string;
+  iconName: string;
+}
+
+export interface DashboardWallet {
+  id: string;
+  name: string;
+  balance: number;
+  provider: string;
+}
+
 // Helper to resolve background color class based on category hex or Tailwind class
 export const getBgColorClass = (color: string) => {
   if (!color) return "bg-gray-50 text-gray-500";
@@ -60,7 +76,8 @@ export const useDashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<DashboardCategory[]>([]);
+  const [wallets, setWallets] = useState<DashboardWallet[]>([]);
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -74,7 +91,15 @@ export const useDashboard = () => {
 
       if (catError) throw catError;
 
-      // 2. Fetch Transactions
+      // 2. Fetch Wallets
+      const { data: walletsData, error: walletError } = await supabase
+        .from("wallets")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (walletError) throw walletError;
+
+      // 3. Fetch Transactions
       const { data: transactionsData, error: txError } = await supabase
         .from("transactions")
         .select("*")
@@ -84,7 +109,7 @@ export const useDashboard = () => {
       if (txError) throw txError;
 
       // Map categories
-      const loadedCats = (categoriesData || []).map((cat) => ({
+      const loadedCats: DashboardCategory[] = (categoriesData || []).map((cat) => ({
         id: cat.id,
         name: cat.name,
         type: cat.type,
@@ -92,6 +117,26 @@ export const useDashboard = () => {
         bgColor: getBgColorClass(cat.color || ""),
         iconName: cat.icon
       }));
+
+      // Calculate dynamic wallet balance by applying transactions in memory
+      const loadedWallets: DashboardWallet[] = (walletsData || []).map((w) => {
+        const walletTransactions = (transactionsData || []).filter(t => t.wallet_id === w.id);
+        const incomeSum = walletTransactions
+          .filter(t => t.type === "income")
+          .reduce((sum, t) => sum + Number(t.amount), 0);
+        const outcomeSum = walletTransactions
+          .filter(t => t.type === "outcome" || t.type === "expense")
+          .reduce((sum, t) => sum + Number(t.amount), 0);
+
+        const currentBalance = Number(w.initial_balance) + incomeSum - outcomeSum;
+
+        return {
+          id: w.id,
+          name: w.name,
+          balance: currentBalance,
+          provider: w.provider
+        };
+      });
 
       // Map transactions
       const loadedTxs = (transactionsData || []).map((tx) => {
@@ -108,6 +153,7 @@ export const useDashboard = () => {
       });
 
       setCategories(loadedCats);
+      setWallets(loadedWallets);
       setTransactions(loadedTxs);
     } catch (err) {
       console.error("Error loading dashboard info:", err);
@@ -205,8 +251,109 @@ export const useDashboard = () => {
     };
   });
 
+  const addTransaction = async (params: {
+    title: string;
+    amount: number;
+    type: "income" | "outcome";
+    categoryId: string;
+    walletId: string;
+    date: string;
+  }) => {
+    if (!user) throw new Error("User not authenticated.");
+
+    const { error } = await supabase
+      .from("transactions")
+      .insert({
+        user_id: user.id,
+        wallet_id: params.walletId,
+        type: params.type,
+        amount: params.amount,
+        category_id: params.categoryId,
+        note: params.title,
+        date: params.date
+      });
+
+    if (error) throw error;
+    await loadData();
+  };
+
+  const transferFunds = async (params: {
+    sourceWalletId: string;
+    destWalletId: string;
+    amount: number;
+    note: string;
+    date: string;
+  }) => {
+    if (!user) throw new Error("User not authenticated.");
+    if (params.sourceWalletId === params.destWalletId) {
+      throw new Error("Source and destination wallets must be different.");
+    }
+
+    // 1. Fetch categories to find a "Transfer" category or similar
+    const { data: categoriesData, error: catError } = await supabase
+      .from("categories")
+      .select("id, name")
+      .or(`user_id.is.null,user_id.eq.${user.id}`);
+
+    if (catError) throw catError;
+
+    // Search for a category with name containing "transfer"
+    let transferCatId = categoriesData?.find(
+      c => c.name.toLowerCase().includes("transfer")
+    )?.id;
+
+    // If no Transfer category found, let's look for any outcome/expense category, or fall back to categoriesData[0].id
+    if (!transferCatId && categoriesData && categoriesData.length > 0) {
+      transferCatId = categoriesData[0].id;
+    }
+
+    if (!transferCatId) {
+      throw new Error("No category found to associate with transfer.");
+    }
+
+    // Get wallet names for note formatting
+    const sourceWalletName = wallets.find(w => w.id === params.sourceWalletId)?.name || "Wallet";
+    const destWalletName = wallets.find(w => w.id === params.destWalletId)?.name || "Wallet";
+
+    const outcomeNote = `Transfer to ${destWalletName}${params.note ? `: ${params.note}` : ""}`;
+    const incomeNote = `Transfer from ${sourceWalletName}${params.note ? `: ${params.note}` : ""}`;
+
+    // Perform two insertions (one outcome, one income)
+    const { error: outcomeError } = await supabase
+      .from("transactions")
+      .insert({
+        user_id: user.id,
+        wallet_id: params.sourceWalletId,
+        type: "outcome",
+        amount: params.amount,
+        category_id: transferCatId,
+        note: outcomeNote,
+        date: params.date
+      });
+
+    if (outcomeError) throw outcomeError;
+
+    const { error: incomeError } = await supabase
+      .from("transactions")
+      .insert({
+        user_id: user.id,
+        wallet_id: params.destWalletId,
+        type: "income",
+        amount: params.amount,
+        category_id: transferCatId,
+        note: incomeNote,
+        date: params.date
+      });
+
+    if (incomeError) throw incomeError;
+
+    await loadData();
+  };
+
   return {
     loading,
+    wallets,
+    categories,
     totalIncome,
     totalOutcome,
     totalSaving,
@@ -214,5 +361,7 @@ export const useDashboard = () => {
     dailyExpensesData,
     recentActivities,
     refetch: loadData,
+    addTransaction,
+    transferFunds,
   };
 };

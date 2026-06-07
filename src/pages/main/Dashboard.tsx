@@ -15,12 +15,16 @@ import {
 const Dashboard: React.FC = () => {
   const {
     loading,
+    wallets,
+    categories,
     totalIncome,
     totalOutcome,
     totalSaving,
     monthlyChartData,
     dailyExpensesData,
     recentActivities,
+    addTransaction,
+    transferFunds,
   } = useDashboard();
 
   if (loading) {
@@ -72,17 +76,26 @@ const Dashboard: React.FC = () => {
           iconBgClass="bg-blue/10 text-blue"
         />
 
-        {/* Monthly Comparison Chart (spans 2 columns) */}
-        <OverviewChart data={monthlyChartData} />
+        <div className="md:col-span-2 flex flex-col gap-6">
+          {/* Monthly Comparison Chart (spans 2 columns) */}
+          <OverviewChart data={monthlyChartData} />
 
-        {/* Quick Actions Card (spans 1 column) */}
-        <QuickActions />
+          {/* Daily Expenses Chart Card (spans 2 columns) */}
+          <DailyExpensesChart data={dailyExpensesData} />
+        </div>
 
-        {/* Daily Expenses Chart Card (spans 2 columns) */}
-        <DailyExpensesChart data={dailyExpensesData} />
+        <div className="md:col-span-1 flex flex-col gap-6">
+          {/* Quick Actions Card (spans 1 column) */}
+          <QuickActions
+            categories={categories}
+            wallets={wallets}
+            addTransaction={addTransaction}
+            transferFunds={transferFunds}
+          />
 
-        {/* Recent Activity Card (spans 1 column) */}
-        <RecentActivities data={recentActivities} />
+          {/* Recent Activity Card (spans 1 column) */}
+          <RecentActivities data={recentActivities} />
+        </div>
       </div>
     </MainLayout>
   );
