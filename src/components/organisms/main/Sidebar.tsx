@@ -10,10 +10,16 @@ import {
   IoChevronDownOutline 
 } from "react-icons/io5";
 import NavLink from "../../atoms/navigation/NavLink";
+import { useAuth } from "../../../contexts/AuthContext";
+
 
 const Sidebar = () => {
+  const { profile, user, signOut } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const displayName = profile?.name || user?.email?.split("@")[0] || "User";
+  const userInitial = displayName.charAt(0).toUpperCase();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -33,10 +39,15 @@ const Sidebar = () => {
     setIsMenuOpen(false);
   };
 
-  const handleLogoutClick = () => {
-    console.log("Perform Logout");
+  const handleLogoutClick = async () => {
     setIsMenuOpen(false);
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
+
 
   return (
     <aside className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-100 flex flex-row items-center justify-between px-4 z-50 md:relative md:bottom-auto md:left-auto md:right-auto md:h-screen md:sticky md:top-0 md:flex-col md:justify-between md:p-4 md:border-r md:border-t-0">
@@ -95,10 +106,10 @@ const Sidebar = () => {
         >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue text-white flex items-center justify-center font-bold text-sm shadow-sm flex-shrink-0">
-              A
+              {userInitial}
             </div>
             <div className="hidden md:block text-left">
-              <p className="text-black font-bold text-sm leading-none">Azka Zufar Hanif</p>
+              <p className="text-black font-bold text-sm leading-none truncate max-w-[120px]" title={displayName}>{displayName}</p>
               <p className="text-gray-400 text-xs mt-1">Premium Account</p>
             </div>
           </div>

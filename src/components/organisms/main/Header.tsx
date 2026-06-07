@@ -1,12 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 import Input from "../../atoms/form/Input";
 import { IoIosNotifications } from "react-icons/io";
+import { useAuth } from "../../../contexts/AuthContext";
+
 
 const Header = () => {
+  const { profile, user } = useAuth();
   const [isMac, setIsMac] = useState(true);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
+
+  const firstName = profile?.name 
+    ? profile.name.split(" ")[0] 
+    : (user?.email ? user.email.split("@")[0] : "User");
 
   useEffect(() => {
     // Detect OS for shortcut labels
@@ -38,7 +45,7 @@ const Header = () => {
   return (
     <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 w-full border-b border-gray-50 pb-4">
       <h1 className="text-xl md:text-2xl font-extrabold text-black">
-        Hi, Azka! Welcome back🙌🏻
+        Hi, {firstName}! Welcome back🙌🏻
       </h1>
       
       <div className="flex items-center gap-3 w-full md:w-auto">

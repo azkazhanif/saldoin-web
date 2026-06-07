@@ -1,0 +1,445 @@
+
+SALDOIN
+Product Requirements Document
+
+
+Versi: 1.0 — Draft
+Tanggal: Juni 2026
+Status: In Review
+Owner: Solo Developer
+
+"Bukan yang paling canggih, tapi yang paling selesai."
+
+1. Overview & Problem Statement
+1.1 Latar Belakang
+Saldoin adalah aplikasi manajemen keuangan pribadi berbasis web yang dibangun oleh seorang solo developer dengan tujuan menyelesaikan masalah nyata yang dihadapi secara personal: pengeluaran yang habis tanpa jejak yang jelas.
+Berbeda dari pendekatan kompetitor yang sering terlalu kompleks atau berfokus pada fitur investasi, Saldoin didesain dengan filosofi: catat dulu, analisis kemudian.
+
+1.2 Problem Statement
+Berikut adalah masalah nyata yang menjadi alasan Saldoin dibangun:
+
+Pain Points yang Harus Diselesaikan
+Masalah 1 — Uang habis tanpa tahu ke mana
+Tidak ada pencatatan konsisten. Akhir bulan tidak bisa rekonstruksi pengeluaran. Tidak tahu kategori mana yang paling boros.
+
+Masalah 2 — Saldo tersebar di banyak tempat
+BCA, GoPay, OVO, dompet fisik — total kekayaan bersih tidak bisa dilihat dalam satu layar.
+
+Masalah 3 — Budget yang dibuat tidak dipantau
+Budget dibuat di awal bulan di Notes atau Excel, lalu dilupakan. Tidak ada alert real-time ketika mendekati limit.
+
+Masalah 4 — Aplikasi yang ada tidak cocok dengan habit
+Terlalu banyak langkah untuk input satu transaksi. Onboarding terlalu panjang. Fitur yang tidak relevan mendominasi layar.
+
+1.3 Tujuan Produk
+	•	Memberikan visibilitas total terhadap kondisi keuangan harian dalam satu dashboard
+	•	Memudahkan pencatatan transaksi dalam waktu kurang dari 10 detik
+	•	Mengingatkan user sebelum budget jebol, bukan setelah
+	•	Dapat diakses dari browser manapun dengan performa cepat (< 500ms initial load)
+
+1.4 Bukan Tujuan Produk (Non-Goals)
+Hal-hal berikut sengaja tidak dimasukkan ke dalam scope MVP:
+	•	Manajemen investasi real-time (saham, reksadana, crypto)
+	•	Sinkronisasi otomatis dengan rekening bank (open banking / screen scraping)
+	•	Fitur multi-user atau shared wallet antar pasangan / keluarga
+	•	Mobile app native (iOS / Android)
+	•	Laporan pajak atau pembukuan akuntansi formal
+
+2. Ukuran Keberhasilan
+2.1 Primary Success Criteria
+PRD ini mendefinisikan tiga ukuran keberhasilan utama, sesuai yang disepakati:
+
+Definition of Done — MVP
+Kriteria 1 — Problem terselesaikan (personal)
+Developer dapat menggunakan Saldoin sendiri selama minimal 30 hari berturut-turut untuk mencatat semua transaksi harian tanpa kembali ke aplikasi lain atau spreadsheet.
+
+Kriteria 2 — Deployed dan dapat diakses publik
+Aplikasi live di domain publik (misal: saldoin.app atau saldoin.vercel.app), dapat diakses dari browser manapun tanpa instalasi.
+
+Kriteria 3 — Loading time di bawah 500ms
+First Contentful Paint (FCP) < 500ms diukur menggunakan Lighthouse atau PageSpeed Insights pada koneksi 4G emulation. Initial JS bundle < 200KB gzipped.
+
+2.2 Key Metrics per Fitur
+Fitur
+Metrik Keberhasilan
+Target
+Input Transaksi
+Waktu dari buka app hingga transaksi tersimpan
+< 10 detik
+Dashboard
+Semua saldo ter-update tanpa reload manual
+Real-time (local state)
+Budget
+Alert muncul ketika pengeluaran > 80% limit
+Akurat 100%
+Wallet
+Total saldo semua wallet akurat
+Zero calculation error
+Tabungan
+Progress goal terhitung otomatis
+Akurat berdasarkan transaksi
+Performance
+First Contentful Paint
+< 500ms
+Performance
+Lighthouse Performance Score
+> 90
+Reliability
+Tidak ada data loss saat refresh
+100% persistent
+
+2.3 Anti-Metrics (Hal yang Bukan Ukuran Sukses)
+Jangan tergoda mengukur hal-hal berikut di fase MVP:
+	•	Jumlah user (bukan produk publik dulu, selesaikan untuk diri sendiri)
+	•	Fitur yang paling banyak diminta orang lain
+	•	Seberapa mirip dengan PINA atau sisasaldo
+	•	Kesempurnaan UI sebelum fitur core berjalan
+
+3. User Stories & Acceptance Criteria
+3.1 Persona
+Target user MVP adalah developer sendiri dengan karakteristik berikut:
+	•	Memiliki 3-5 akun/dompet berbeda (bank, e-wallet, cash)
+	•	Pengeluaran harian bervariasi: makan, transport, subscription digital
+	•	Memiliki target tabungan tapi sering tidak terpantau
+	•	Menggunakan laptop dan HP untuk akses internet
+	•	Tidak ingin aplikasi yang membutuhkan setup panjang
+
+3.2 User Stories — Phase 1 (MVP)
+Wallet Management
+	•	Sebagai user, saya ingin menambahkan wallet baru (bank / e-wallet / cash) dengan nama dan saldo awal, agar semua sumber uang saya tercatat dalam satu sistem.
+	•	Sebagai user, saya ingin melihat total saldo dari semua wallet sekaligus di dashboard, agar saya tahu net worth saya sekarang tanpa membuka tiap aplikasi bank.
+	•	Sebagai user, saya ingin mengedit nama atau saldo wallet, agar data tetap akurat saat ada koreksi.
+
+Transaction
+	•	Sebagai user, saya ingin mencatat transaksi keluar (expense) dalam 3 langkah atau kurang: pilih wallet, masukkan nominal, pilih kategori — lalu simpan.
+	•	Sebagai user, saya ingin mencatat transaksi masuk (income) dengan sumber yang jelas (gaji, freelance, transfer).
+	•	Sebagai user, saya ingin melakukan transfer antar wallet sendiri (misal: dari BCA ke GoPay), sehingga saldo tiap wallet tetap akurat.
+	•	Sebagai user, saya ingin menambahkan catatan opsional pada transaksi, untuk mengingat konteks pengeluaran.
+	•	Sebagai user, saya ingin mengedit atau menghapus transaksi yang salah input.
+
+Dashboard
+	•	Sebagai user, saya ingin melihat ringkasan bulan ini: total pemasukan, pengeluaran, dan selisihnya, agar saya tahu cashflow bulan berjalan.
+	•	Sebagai user, saya ingin melihat 5 transaksi terakhir langsung di dashboard, agar saya bisa cepat mengecek aktivitas terbaru.
+	•	Sebagai user, saya ingin melihat breakdown pengeluaran per kategori bulan ini, agar tahu kategori mana yang paling banyak menghabiskan uang.
+
+Category
+	•	Sebagai user, saya ingin memilih dari daftar kategori default (Makan, Transport, Hiburan, Kesehatan, Belanja, Tagihan, dll) saat input transaksi.
+	•	Sebagai user, saya ingin menambahkan kategori custom jika kategori default tidak mencukupi.
+
+3.3 User Stories — Phase 2 (Post-MVP)
+Budget
+	•	Sebagai user, saya ingin membuat budget per kategori per bulan (misal: Makan = Rp 1.500.000/bulan).
+	•	Sebagai user, saya ingin mendapatkan indikator visual (warna merah/kuning/hijau) di dashboard ketika pengeluaran suatu kategori mendekati atau melebihi budget.
+	•	Sebagai user, saya ingin budget otomatis reset di awal bulan baru tanpa saya harus setting ulang.
+
+Subscription / Recurring
+	•	Sebagai user, saya ingin mendaftarkan biaya berulang (Netflix Rp 65.000/bulan, setiap tanggal 5), agar saya tidak lupa ada pengeluaran yang akan datang.
+	•	Sebagai user, saya ingin melihat total pengeluaran subscription saya per bulan dalam satu tampilan.
+
+Tabungan
+	•	Sebagai user, saya ingin membuat goal tabungan dengan nama, target nominal, dan tanggal target (misal: Liburan Bali = Rp 5.000.000, target Desember 2026).
+	•	Sebagai user, saya ingin mengalokasikan uang ke goal tabungan dari wallet tertentu, sehingga saldo wallet berkurang dan progress tabungan bertambah.
+	•	Sebagai user, saya ingin melihat progress setiap goal tabungan dalam bentuk progress bar dengan persentase pencapaian.
+
+4. Feature Scope & Prioritization
+4.1 In-Scope / Out-of-Scope per Phase
+Fitur
+Status MVP
+Catatan
+Wallet (manual)
+✓ In scope
+Tambah, edit, hapus wallet. Saldo dihitung dari transaksi.
+Transaction (In/Out/Transfer)
+✓ In scope
+Core fitur. Wajib selesai di Phase 1.
+Category (default + custom)
+✓ In scope
+Minimal 10 kategori default tersedia.
+Dashboard ringkasan
+✓ In scope
+Total saldo, cashflow bulan ini, recent transactions.
+Budget per kategori
+~ Later
+Phase 2. Perlu data transaksi dulu minimal 1 bulan.
+Subscription / Recurring
+~ Later
+Phase 2. Fitur comfort, bukan blocker.
+Tabungan / Saving Goals
+~ Later
+Phase 2. Terpisah dari wallet operasional.
+Laporan & Export CSV
+~ Later
+Phase 2. Berguna setelah data menumpuk.
+Email / SMS parsing
+✗ Out of scope
+Privacy concern tinggi. Butuh consent explicit. Phase 3+
+Sinkronisasi rekening bank
+✗ Out of scope
+Tidak ada open banking API di Indonesia yang stabil.
+Tracking investasi (saham/reksadana)
+✗ Out of scope
+Nilai fluktuatif. Butuh integrasi API per platform.
+Multi-user / shared wallet
+✗ Out of scope
+Kompleksitas auth tinggi. Bukan prioritas MVP.
+Mobile app native
+✗ Out of scope
+PWA sudah cukup untuk fase ini.
+Notifikasi push / email
+✗ Out of scope
+Butuh backend service. Terlalu besar untuk MVP.
+
+4.2 Keputusan Desain Kritis
+Tabungan vs Wallet — Arsitektur Terpisah
+Tabungan bukan wallet operasional. Uang di tabungan secara fisik mungkin ada di BCA, tapi secara logis di-tag sebagai allocated dan tidak dihitung sebagai available balance. Model:
+	•	Wallet = saldo yang bisa digunakan sekarang (operasional)
+	•	Tabungan = alokasi dengan tujuan dan deadline. Memiliki home wallet sebagai physical location.
+	•	Ketika user menambah dana tabungan: saldo home wallet berkurang, progress tabungan bertambah.
+
+Data Persistence — Local-first dengan cloud optional
+Untuk MVP, data disimpan menggunakan salah satu dari opsi berikut (keputusan final saat arsitektur didesain):
+	•	Opsi A: Supabase (PostgreSQL) — gratis tier, auth built-in, real-time. Direkomendasikan.
+	•	Opsi B: Firebase Firestore — familiar bagi banyak developer, gratis tier cukup.
+	•	Opsi C: Local storage + export JSON — paling cepat dibuild, tapi tidak persistent antar device.
+Rekomendasi
+Rekomendasi: Supabase. Gratis untuk proyek solo, PostgreSQL lebih familiar untuk query kompleks (budget aggregation, monthly report), dan ada auth siap pakai.
+
+Transfer Antar Wallet
+Transfer bukan transaksi biasa. Implementasi: satu transfer menghasilkan DUA transaksi yang linked — debit dari wallet asal, kredit ke wallet tujuan. Keduanya harus atomic (gagal satu, keduanya dibatalkan). Jangan tampilkan transfer sebagai expense di report.
+
+5. Technical Requirements
+5.1 Tech Stack
+Layer
+Teknologi
+Alasan
+Frontend
+React + Vite + TypeScript
+Vite untuk build speed. TS untuk mencegah bug saat belajar.
+Styling
+TailwindCSS
+Utility-first, cepat iterasi UI.
+State Management
+Zustand
+Lebih ringan dari Redux, cukup untuk skala ini.
+Routing
+React Router v6
+Standard SPA routing.
+Database
+Supabase (PostgreSQL)
+Auth + DB + realtime dalam satu platform. Gratis.
+Deployment
+Vercel
+Auto-deploy dari GitHub. Edge network. Gratis.
+Charts
+Recharts
+Ringan, React-native, cukup untuk pie + bar chart.
+
+5.2 Performance Requirements
+Performance Targets
+First Contentful Paint (FCP): < 500ms pada 4G emulation
+Time to Interactive (TTI): < 1.5 detik
+Initial JS Bundle: < 200KB gzipped (gunakan code splitting per route)
+Lighthouse Performance Score: > 90
+Core Web Vitals: semua dalam kategori 'Good'
+Database query response: < 200ms untuk operasi CRUD standar
+
+5.3 Cara Mencapai Target Performance
+	•	Lazy load setiap route menggunakan React.lazy() + Suspense
+	•	Gunakan Vite bundle analyzer untuk identifikasi dependency besar
+	•	Jangan import library chart di halaman yang tidak membutuhkan chart
+	•	Gunakan Vercel Edge Network (CDN otomatis untuk static assets)
+	•	Optimasi gambar: gunakan WebP, hindari gambar besar di initial load
+	•	Preconnect ke Supabase domain di index.html
+
+5.4 Security Baseline
+	•	Autentikasi wajib — tidak ada halaman yang bisa diakses tanpa login
+	•	Row Level Security (RLS) di Supabase — user hanya bisa akses data miliknya sendiri
+	•	Tidak ada API key yang di-hardcode di frontend code
+	•	Environment variables untuk semua credentials (Supabase URL, anon key)
+	•	HTTPS wajib — Vercel provides ini secara otomatis
+
+6. Data Model (High Level)
+Detail implementasi SQL akan didokumentasikan terpisah. Berikut adalah entity dan relasi utama:
+
+Entity
+Fields Utama
+Relasi
+users
+id, email, name, created_at
+Supabase Auth. One-to-many dengan semua entity.
+wallets
+id, user_id, name, type, color, icon, is_active
+type: bank | ewallet | cash. Balance dihitung dari transactions.
+transactions
+id, user_id, wallet_id, type, amount, category_id, note, date, transfer_pair_id
+type: income | expense | transfer. Transfer memiliki pair_id.
+categories
+id, user_id, name, icon, color, type, is_default
+type: income | expense. is_default untuk kategori bawaan sistem.
+budgets
+id, user_id, category_id, amount, period, month, year
+Phase 2. Relasi ke categories.
+saving_goals
+id, user_id, name, target_amount, current_amount, deadline, wallet_id
+Phase 2. wallet_id adalah home wallet (physical location).
+subscriptions
+id, user_id, name, amount, frequency, next_due_date, wallet_id
+Phase 2. frequency: daily | weekly | monthly | yearly.
+
+Penting: Balance Calculation Strategy
+Catatan penting: Saldo wallet TIDAK disimpan sebagai field yang diupdate setiap transaksi.
+Saldo dihitung secara dynamic: SUM(income) - SUM(expense) + initial_balance.
+Ini mencegah inkonsistensi data jika transaksi diedit atau dihapus.
+Trade-off: query sedikit lebih lambat, tapi data selalu akurat. Untuk skala personal, ini tidak jadi masalah.
+
+7. UX Principles & Design Decisions
+7.1 Prinsip Desain
+	•	Speed over aesthetics di MVP — fitur berfungsi lebih penting dari animasi halus
+	•	Satu aksi utama per layar — jangan membebani user dengan terlalu banyak pilihan
+	•	Mobile-first layout — mayoritas pencatatan terjadi di HP, bukan laptop
+	•	Data density di dashboard — user ingin lihat banyak info dalam satu pandang, bukan scroll panjang
+	•	Feedback instan — setiap aksi (simpan, hapus, transfer) harus ada konfirmasi visual
+
+7.2 Competitive Analysis — Apa yang Diperbaiki
+Aplikasi
+Yang Kurang Optimal
+Solusi di Saldoin
+myInOut
+4+ tap untuk input 1 transaksi
+Max 3 langkah: nominal → kategori → simpan. Wallet terakhir diingat.
+Sisasaldo
+Tidak ada quick view total semua saldo
+Dashboard row pertama selalu total saldo semua wallet.
+PINA
+Terlalu fokus investasi, cashflow harian terkubur
+Transaksi harian adalah first-class citizen, bukan secondary.
+Semua
+Onboarding panjang sebelum bisa pakai
+First-run: tambah 1 wallet → selesai. Langsung bisa transaksi.
+
+7.3 Critical User Flows
+Flow 1: Onboarding (First-time user)
+	•	Buka app → landing di halaman register/login
+	•	Register dengan email + password
+	•	Halaman setup: "Tambahkan wallet pertama kamu" — wajib 1 wallet untuk mulai
+	•	Input nama wallet (misal: BCA), tipe (bank), saldo awal
+	•	Redirect ke Dashboard — langsung bisa pakai
+Target: user bisa input transaksi pertama dalam < 2 menit dari buka app.
+
+Flow 2: Input Transaksi (Daily use — paling kritis)
+	•	Tap tombol '+' (FAB) yang selalu visible dari manapun di app
+	•	Pilih tipe: Keluar / Masuk / Transfer (default: Keluar)
+	•	Ketik nominal (keyboard langsung muncul)
+	•	Pilih kategori dari grid icon
+	•	Wallet terisi otomatis (wallet terakhir digunakan). User bisa ganti.
+	•	Opsional: tambah catatan
+	•	Tap Simpan → transaksi tersimpan, dashboard terupdate
+Target: kurang dari 10 detik dari langkah 1 ke 7.
+
+8. Constraints, Risks & Mitigations
+Risk
+Likelihood
+Impact
+Mitigasi
+Scope creep — menambah fitur sebelum MVP selesai
+Sangat Tinggi
+Tinggi
+Freeze fitur list. Tidak ada fitur baru sampai Phase 1 di-deploy.
+Comparison trap — merasa UI kurang vs kompetitor
+Tinggi
+Sedang
+Commit pakai sendiri 30 hari. UI bisa dipolish, fitur yang tidak ada tidak bisa.
+Supabase free tier limit terlampaui
+Rendah
+Rendah
+Free tier: 500MB DB, 2GB bandwidth. Lebih dari cukup untuk personal use.
+Bundle size membengkak (> 500ms load)
+Sedang
+Tinggi
+Audit bundle setiap minggu. Lazy load semua route. Jangan install library tanpa cek size.
+Burn out karena solo development
+Sedang
+Tinggi
+Time-box: maksimal 2 jam per sesi development. Ship early, ship often.
+
+9. Delivery Plan
+9.1 Phase 1 — MVP (Target: 6 Minggu)
+Minggu
+Target
+Output
+Minggu 1
+Setup & Foundation
+Vite + React + TS + Tailwind. Supabase project. Auth (login/register). Routing.
+Minggu 2
+Wallet & Data Model
+CRUD wallet. Supabase schema. RLS setup. Wallet list page.
+Minggu 3
+Transaction Core
+Input transaction form. In/Out/Transfer. Category selector. Validasi.
+Minggu 4
+Dashboard
+Total saldo. Cashflow bulan ini. Recent transactions. Category breakdown.
+Minggu 5
+Polish & Bug Fix
+Edit/delete transaksi. Loading states. Error handling. Empty states.
+Minggu 6
+Deploy & Performance
+Deploy ke Vercel. Lighthouse audit. Bundle optimization. Performance < 500ms.
+
+9.2 Definition of Done — Phase 1
+Checklist — MVP Done
+Semua user stories di section 3.2 dapat dilakukan tanpa error
+Deployed di URL publik (vercel.app atau custom domain)
+Lighthouse Performance Score > 90 pada mobile
+First Contentful Paint < 500ms pada 4G emulation
+Developer menggunakan app sendiri selama 7 hari berturut-turut sebelum declare done
+Tidak ada console error di production build
+Data tidak hilang saat browser di-refresh
+
+10. Appendix
+10.1 Kategori Default
+Berikut kategori expense default yang tersedia saat user pertama kali register:
+	•	Makan & Minum — restoran, warung, kafe, groceries
+	•	Transport — bensin, parkir, ojek, commuter line, taksi
+	•	Hiburan — bioskop, game, streaming, konser
+	•	Kesehatan — obat, dokter, gym, vitamin
+	•	Belanja — fashion, elektronik, perabot
+	•	Tagihan — listrik, air, internet, telepon
+	•	Pendidikan — kursus, buku, seminar
+	•	Sosial — kado, sumbangan, makan bareng
+	•	Investasi — transfer ke tabungan / investasi (internal)
+	•	Lain-lain — tidak masuk kategori manapun
+
+Kategori income default:
+	•	Gaji — pendapatan tetap bulanan
+	•	Freelance — project-based income
+	•	Bisnis — pendapatan dari usaha
+	•	Transfer Masuk — dari wallet lain (internal)
+	•	Lain-lain — dividen, hadiah, refund
+
+10.2 Glossary
+Term
+Definisi
+Wallet
+Representasi akun keuangan: rekening bank, e-wallet (GoPay, OVO), atau dompet fisik (cash).
+Transaction
+Setiap perpindahan uang: masuk (income), keluar (expense), atau transfer antar wallet.
+Transfer
+Perpindahan uang antara dua wallet milik user yang sama. Bukan income, bukan expense.
+Available Balance
+Total saldo wallet yang bisa digunakan, tidak termasuk alokasi tabungan.
+Saving Goal
+Target tabungan dengan nama, nominal, dan deadline. Uangnya secara fisik ada di home wallet.
+Budget
+Batas pengeluaran per kategori per periode (bulan/minggu). Alert jika mendekati limit.
+Subscription
+Pengeluaran berulang dengan jadwal tetap (bulanan, mingguan, tahunan).
+FCP
+First Contentful Paint — waktu hingga konten pertama tampil di browser.
+RLS
+Row Level Security — fitur Supabase yang membatasi akses data per user.
+MVP
+Minimum Viable Product — versi paling sederhana yang sudah solve problem utama.
+
+Dokumen ini adalah living document.
+Update setiap kali ada keputusan signifikan yang mengubah scope atau arah produk.

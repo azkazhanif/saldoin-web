@@ -3,6 +3,9 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
 import { createBrowserRouter, RouterProvider } from "react-router";
+import { AuthProvider } from "./contexts/AuthContext.tsx";
+import ProtectedRoute from "./components/atoms/auth/ProtectedRoute.tsx";
+import AuthRoute from "./components/atoms/auth/AuthRoute.tsx";
 import Login from "./pages/auth/Login.tsx";
 import Register from "./pages/auth/Register.tsx";
 import ForgotPassword from "./pages/auth/ForgotPassword.tsx";
@@ -24,50 +27,93 @@ const router = createBrowserRouter([
     children: [
       {
         path: "login",
-        element: <Login />,
+        element: (
+          <AuthRoute>
+            <Login />
+          </AuthRoute>
+        ),
       },
       {
         path: "register",
-        element: <Register />,
+        element: (
+          <AuthRoute>
+            <Register />
+          </AuthRoute>
+        ),
       },
       {
         path: "forgot-password",
-        element: <ForgotPassword />,
+        element: (
+          <AuthRoute>
+            <ForgotPassword />
+          </AuthRoute>
+        ),
       },
       {
         path: "verify-otp",
-        element: <VerifyOtp />,
+        element: (
+          <AuthRoute>
+            <VerifyOtp />
+          </AuthRoute>
+        ),
       },
       {
         path: "new-password",
-        element: <NewPassword />,
+        element: (
+          <AuthRoute>
+            <NewPassword />
+          </AuthRoute>
+        ),
       },
     ],
   },
   {
     path: "dashboard",
-    element: <Dashboard />,
+    element: (
+      <ProtectedRoute>
+        <Dashboard />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "wallet",
-    element: <Wallet />,
+    element: (
+      <ProtectedRoute>
+        <Wallet />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "transactions",
-    element: <Transactions />,
+    element: (
+      <ProtectedRoute>
+        <Transactions />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "categories",
-    element: <Categories />,
+    element: (
+      <ProtectedRoute>
+        <Categories />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "budget",
-    element: <Budget />,
-  }
+    element: (
+      <ProtectedRoute>
+        <Budget />
+      </ProtectedRoute>
+    ),
+  },
 ]);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   </StrictMode>,
 );
+
