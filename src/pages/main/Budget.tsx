@@ -6,11 +6,21 @@ import {
 } from "react-icons/io5";
 
 const defaultCategories = [
-  { id: "1", name: "Salary & Income", budget: 18250000, type: "income", color: "bg-green-600", bgColor: "bg-green-50 text-green-600", iconName: "IoBriefcaseOutline" },
-  { id: "2", name: "Food & Beverage", budget: 5000000, type: "outcome", color: "bg-amber-500", bgColor: "bg-amber-50 text-amber-600", iconName: "IoFastFoodOutline" },
-  { id: "3", name: "Utilities & Bills", budget: 4000000, type: "outcome", color: "bg-orange-500", bgColor: "bg-orange-50 text-orange-600", iconName: "IoBulbOutline" },
-  { id: "4", name: "Shopping", budget: 3000000, type: "outcome", color: "bg-blue", bgColor: "bg-blue/10 text-blue", iconName: "IoCartOutline" },
-  { id: "5", name: "Entertainment", budget: 2000000, type: "outcome", color: "bg-purple-500", bgColor: "bg-purple-50 text-purple-600", iconName: "IoGameControllerOutline" }
+  { id: "1", name: "Gaji", budget: 18250000, type: "income", color: "bg-green-600", bgColor: "bg-green-50 text-green-600", iconName: "IoBriefcaseOutline" },
+  { id: "2", name: "Freelance", budget: 3250000, type: "income", color: "bg-emerald-600", bgColor: "bg-emerald-50 text-emerald-600", iconName: "IoReceiptOutline" },
+  { id: "3", name: "Bisnis", budget: 0, type: "income", color: "bg-green-700", bgColor: "bg-green-50 text-green-700", iconName: "IoStorefrontOutline" },
+  { id: "4", name: "Transfer Masuk", budget: 0, type: "income", color: "bg-sky-600", bgColor: "bg-sky-50 text-sky-600", iconName: "IoRepeatOutline" },
+  { id: "5", name: "Lain-lain (Income)", budget: 0, type: "income", color: "bg-gray-500", bgColor: "bg-gray-50 text-gray-500", iconName: "IoCashOutline" },
+  { id: "6", name: "Makan & Minum", budget: 5000000, type: "outcome", color: "bg-amber-500", bgColor: "bg-amber-50 text-amber-600", iconName: "IoFastFoodOutline" },
+  { id: "7", name: "Transport", budget: 1500000, type: "outcome", color: "bg-blue", bgColor: "bg-blue/10 text-blue", iconName: "IoCarOutline" },
+  { id: "8", name: "Hiburan", budget: 2000000, type: "outcome", color: "bg-purple-500", bgColor: "bg-purple-50 text-purple-600", iconName: "IoGameControllerOutline" },
+  { id: "9", name: "Kesehatan", budget: 1000000, type: "outcome", color: "bg-red-500", bgColor: "bg-red-50 text-red-600", iconName: "IoHeartOutline" },
+  { id: "10", name: "Belanja", budget: 3000000, type: "outcome", color: "bg-blue-600", bgColor: "bg-blue/10 text-blue-600", iconName: "IoCartOutline" },
+  { id: "11", name: "Tagihan", budget: 4000000, type: "outcome", color: "bg-orange-500", bgColor: "bg-orange-50 text-orange-600", iconName: "IoBulbOutline" },
+  { id: "12", name: "Pendidikan", budget: 0, type: "outcome", color: "bg-teal-600", bgColor: "bg-teal-50 text-teal-600", iconName: "IoBookOutline" },
+  { id: "13", name: "Sosial", budget: 0, type: "outcome", color: "bg-rose-500", bgColor: "bg-rose-50 text-rose-600", iconName: "IoPeopleOutline" },
+  { id: "14", name: "Investasi", budget: 0, type: "outcome", color: "bg-indigo-600", bgColor: "bg-indigo-50 text-indigo-600", iconName: "IoTrendingUpOutline" },
+  { id: "15", name: "Lain-lain", budget: 0, type: "outcome", color: "bg-gray-500", bgColor: "bg-gray-50 text-gray-500", iconName: "IoCashOutline" },
 ];
 
 const formatCurrency = (value: number) => {
