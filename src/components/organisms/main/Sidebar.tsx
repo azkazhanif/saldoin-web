@@ -54,10 +54,10 @@ const Sidebar = () => {
           <p className="hidden md:block text-gray-400 font-bold text-xs uppercase tracking-wider px-2 mb-2">Main Menu</p>
           <ul className="flex flex-row md:flex-col items-center md:items-stretch justify-around md:justify-start gap-1 w-full">
             <NavLink href="/dashboard" icon={GoHome} label="Dashboard" />
-            <NavLink href="" icon={BsWallet} label="Wallet" />
-            <NavLink href="" icon={IoListOutline} label="Transactions" />
-            <NavLink href="" icon={IoListOutline} label="Categories" />
-            <NavLink href="" icon={BiMoneyWithdraw} label="Budget" />
+            <NavLink href="/wallet" icon={BsWallet} label="Wallet" />
+            <NavLink href="/transactions" icon={IoListOutline} label="Transactions" />
+            <NavLink href="/categories" icon={IoListOutline} label="Categories" />
+            <NavLink href="/budget" icon={BiMoneyWithdraw} label="Budget" />
           </ul>
         </div>
       </div>
