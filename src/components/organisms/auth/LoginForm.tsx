@@ -40,7 +40,7 @@ const LoginForm = ({ onSubmitLogin }: LoginFormProps) => {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between">
         <CheckboxLabel
           id="remember"
           name="remember"
@@ -50,7 +50,7 @@ const LoginForm = ({ onSubmitLogin }: LoginFormProps) => {
         />
         <Link
           to="/auth/forgot-password"
-          className="text-blue text-sm font-normal"
+          className="text-blue text-sm font-semibold hover:underline"
         >
           Forgot password?
         </Link>
@@ -58,6 +58,7 @@ const LoginForm = ({ onSubmitLogin }: LoginFormProps) => {
       <Button width="full" type="submit" variant="primary">
         Log In
       </Button>
+
     </form>
   );
 };

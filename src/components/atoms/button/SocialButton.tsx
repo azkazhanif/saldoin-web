@@ -1,8 +1,12 @@
 import React from "react";
 
-const SocialButton = ({ icon }: { icon: React.ReactNode }) => {
+const SocialButton = ({ icon, onClick }: { icon: React.ReactNode; onClick?: () => void }) => {
   return (
-    <button className="text-center p-2 rounded-md  border border-gray-300">
+    <button 
+      onClick={onClick}
+      type="button"
+      className="flex items-center justify-center py-2.5 px-4 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 active:scale-[0.98] transition-all cursor-pointer shadow-sm text-lg text-black"
+    >
       {icon}
     </button>
   );

@@ -10,7 +10,7 @@ const Label = ({
   return (
     <label
       htmlFor={htmlFor}
-      className={`block text-sm font-medium text-black ${className}`}
+      className={`block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wider ${className}`}
     >
       {label}
     </label>
@@ -18,3 +18,4 @@ const Label = ({
 };
 
 export default Label;
+

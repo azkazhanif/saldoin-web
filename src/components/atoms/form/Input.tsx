@@ -27,7 +27,7 @@ const Input = ({
       type={type}
       id={id}
       name={name}
-      className="w-full p-2.5 border border-gray-200 focus:outline-none focus:border-blue focus:ring-1 focus:ring-blue rounded-xl text-sm text-black bg-white placeholder-gray-400"
+      className="w-full p-3 border border-gray-200 focus:outline-none focus:border-blue focus:ring-2 focus:ring-blue/10 rounded-xl text-sm text-black bg-gray-50/50 focus:bg-white placeholder-gray-400 transition-all duration-200"
       autoComplete={autoComplete}
       value={value}
       placeholder={placeholder}
@@ -37,3 +37,4 @@ const Input = ({
 };
 
 export default Input;
+
