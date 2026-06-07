@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
 import MainLayout from "../../layouts/MainLayout";
 import {
   BarChart,
@@ -20,11 +22,46 @@ import {
   IoReceiptOutline,
   IoBriefcaseOutline,
   IoBulbOutline,
-  IoRepeatOutline
+  IoRepeatOutline,
+  IoCashOutline
 } from "react-icons/io5";
 
-// Mock data for the last 12 months (Monthly comparison)
-const monthlyData = [
+// Map icon string names to actual react-icons
+const iconMap: Record<string, any> = {
+  IoBriefcaseOutline: IoBriefcaseOutline,
+  IoFastFoodOutline: IoFastFoodOutline,
+  IoCartOutline: IoCartOutline,
+  IoGameControllerOutline: IoGameControllerOutline,
+  IoBulbOutline: IoBulbOutline,
+  IoReceiptOutline: IoReceiptOutline,
+  IoCashOutline: IoCashOutline
+};
+
+const defaultTransactions = [
+  { id: "1", title: "Salary Payment", category: "Salary & Income", date: "2026-06-07", amount: 15000000, type: "income", walletId: "1" },
+  { id: "2", title: "Starbucks Coffee", category: "Food & Beverage", date: "2026-06-06", amount: 55000, type: "outcome", walletId: "2" },
+  { id: "3", title: "Supermarket Groceries", category: "Shopping", date: "2026-06-05", amount: 450000, type: "outcome", walletId: "2" },
+  { id: "4", title: "Steam Game Purchase", category: "Entertainment", date: "2026-06-04", amount: 250000, type: "outcome", walletId: "2" },
+  { id: "5", title: "Electricity Bill", category: "Utilities & Bills", date: "2026-06-03", amount: 850000, type: "outcome", walletId: "3" },
+  { id: "6", title: "Freelance Design Fee", category: "Salary & Income", date: "2026-06-02", amount: 3250000, type: "income", walletId: "1" }
+];
+
+const defaultWallets = [
+  { id: "1", name: "BCA Gaji", type: "Bank", provider: "BCA", balance: 8450000, accountNumber: "•••• •••• •••• 4821" },
+  { id: "2", name: "GoPay Utama", type: "E-Wallet", provider: "GoPay", balance: 1250000, accountNumber: "0812 •••• 9923" },
+  { id: "3", name: "Dompet Tunai", type: "Cash", provider: "Cash", balance: 500000, accountNumber: "Cash Wallet" }
+];
+
+const defaultCategories = [
+  { id: "1", name: "Salary & Income", budget: 18250000, type: "income", color: "bg-green-600", bgColor: "bg-green-50 text-green-600", iconName: "IoBriefcaseOutline" },
+  { id: "2", name: "Food & Beverage", budget: 5000000, type: "outcome", color: "bg-amber-500", bgColor: "bg-amber-50 text-amber-600", iconName: "IoFastFoodOutline" },
+  { id: "3", name: "Utilities & Bills", budget: 4000000, type: "outcome", color: "bg-orange-500", bgColor: "bg-orange-50 text-orange-600", iconName: "IoBulbOutline" },
+  { id: "4", name: "Shopping", budget: 3000000, type: "outcome", color: "bg-blue", bgColor: "bg-blue/10 text-blue", iconName: "IoCartOutline" },
+  { id: "5", name: "Entertainment", budget: 2000000, type: "outcome", color: "bg-purple-500", bgColor: "bg-purple-50 text-purple-600", iconName: "IoGameControllerOutline" }
+];
+
+// Historical monthly overview base data (updated dynamically for June)
+const baseMonthlyData = [
   { name: "Jul", income: 12000000, outcome: 8000000 },
   { name: "Aug", income: 13500000, outcome: 8500000 },
   { name: "Sep", income: 14000000, outcome: 9000000 },
@@ -36,21 +73,9 @@ const monthlyData = [
   { name: "Mar", income: 17200000, outcome: 10200000 },
   { name: "Apr", income: 18500000, outcome: 11000000 },
   { name: "May", income: 19000000, outcome: 10500000 },
-  { name: "Jun", income: 20500000, outcome: 11200000 },
+  { name: "Jun", income: 0, outcome: 0 },
 ];
 
-// Mock data for the last 7 days of daily expenses
-const dailyData = [
-  { date: "01 Jun", amount: 250000 },
-  { date: "02 Jun", amount: 450000 },
-  { date: "03 Jun", amount: 150000 },
-  { date: "04 Jun", amount: 800000 },
-  { date: "05 Jun", amount: 350000 },
-  { date: "06 Jun", amount: 600000 },
-  { date: "07 Jun", amount: 200000 },
-];
-
-// Indonesian Rupiah currency formatting utility
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -84,71 +109,95 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-// Mock Activities
-const activities = [
-  {
-    id: "1",
-    title: "Salary Payment",
-    category: "Income",
-    date: "07 Jun 2026, 09:00",
-    amount: 15000000,
-    type: "income",
-    icon: IoBriefcaseOutline,
-    bgColor: "bg-green-50 text-green-600",
-  },
-  {
-    id: "2",
-    title: "Starbucks Coffee",
-    category: "Food & Beverage",
-    date: "06 Jun 2026, 15:45",
-    amount: -55000,
-    type: "outcome",
-    icon: IoFastFoodOutline,
-    bgColor: "bg-amber-50 text-amber-600",
-  },
-  {
-    id: "3",
-    title: "Supermarket Groceries",
-    category: "Shopping",
-    date: "05 Jun 2026, 18:30",
-    amount: -450000,
-    type: "outcome",
-    icon: IoCartOutline,
-    bgColor: "bg-blue-50 text-blue-600",
-  },
-  {
-    id: "4",
-    title: "Steam Game Purchase",
-    category: "Entertainment",
-    date: "04 Jun 2026, 21:00",
-    amount: -250000,
-    type: "outcome",
-    icon: IoGameControllerOutline,
-    bgColor: "bg-purple-50 text-purple-600",
-  },
-  {
-    id: "5",
-    title: "Electricity Bill",
-    category: "Utilities",
-    date: "03 Jun 2026, 10:15",
-    amount: -850000,
-    type: "outcome",
-    icon: IoBulbOutline,
-    bgColor: "bg-orange-50 text-orange-600",
-  },
-  {
-    id: "6",
-    title: "Freelance Design Fee",
-    category: "Income",
-    date: "02 Jun 2026, 14:00",
-    amount: 3250000,
-    type: "income",
-    icon: IoReceiptOutline,
-    bgColor: "bg-green-50 text-green-600",
-  },
-];
-
 const Dashboard = () => {
+  const navigate = useNavigate();
+
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    const localTxs = localStorage.getItem("saldooin_transactions");
+    const localWallets = localStorage.getItem("saldooin_wallets");
+    const localCats = localStorage.getItem("saldooin_categories");
+
+    const loadedTxs = localTxs ? JSON.parse(localTxs) : defaultTransactions;
+    const loadedCats = localCats ? JSON.parse(localCats) : defaultCategories;
+
+    setTransactions(loadedTxs);
+    setCategories(loadedCats);
+
+    if (!localTxs) localStorage.setItem("saldooin_transactions", JSON.stringify(defaultTransactions));
+    if (!localWallets) localStorage.setItem("saldooin_wallets", JSON.stringify(defaultWallets));
+    if (!localCats) localStorage.setItem("saldooin_categories", JSON.stringify(defaultCategories));
+  }, []);
+
+  // Compute live summaries
+  const totalIncome = transactions
+    .filter(t => t.type === "income")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalOutcome = transactions
+    .filter(t => t.type === "outcome")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalSaving = Math.max(0, totalIncome - totalOutcome);
+
+  // Compute monthly data dynamically for June
+  const junIncome = transactions
+    .filter(t => t.type === "income" && (t.date.includes("-06-") || t.date.includes("Jun")))
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const junOutcome = transactions
+    .filter(t => t.type === "outcome" && (t.date.includes("-06-") || t.date.includes("Jun")))
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const monthlyChartData = baseMonthlyData.map(m => {
+    if (m.name === "Jun") {
+      return { ...m, income: junIncome, outcome: junOutcome };
+    }
+    return m;
+  });
+
+  // Calculate 7 days of daily expenses dynamically
+  const getDailyExpenses = () => {
+    const daily: Record<string, number> = {};
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+      daily[dateStr] = 0;
+    }
+
+    transactions.filter(t => t.type === "outcome").forEach(t => {
+      let txDateStr = "";
+      if (t.date.includes("-")) {
+        const parts = t.date.split("-");
+        const dateObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        txDateStr = dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+      } else {
+        const parts = t.date.split(" ");
+        if (parts.length >= 2) {
+          txDateStr = `${parts[0]} ${parts[1]}`;
+        }
+      }
+
+      if (daily[txDateStr] !== undefined) {
+        daily[txDateStr] += t.amount;
+      }
+    });
+
+    return Object.keys(daily).map(key => ({
+      date: key,
+      amount: daily[key]
+    }));
+  };
+
+  const dailyExpensesData = getDailyExpenses();
+
+  // Show only top 6 recent activities
+  const recentActivities = transactions.slice(0, 6);
+
   return (
     <MainLayout>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -157,7 +206,7 @@ const Dashboard = () => {
         <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex items-center justify-between transition-all duration-300 hover:shadow-md hover:border-gray-200">
           <div className="flex flex-col">
             <span className="text-gray-400 text-sm font-semibold mb-1">Total Income</span>
-            <span className="text-black font-extrabold text-2xl leading-none">Rp 18.250.000</span>
+            <span className="text-black font-extrabold text-2xl leading-none">{formatCurrency(totalIncome)}</span>
             <span className="text-green-500 font-bold text-xs mt-2 flex items-center gap-1">
               <IoTrendingUpOutline className="w-4 h-4" /> +12.5% vs last month
             </span>
@@ -171,7 +220,7 @@ const Dashboard = () => {
         <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex items-center justify-between transition-all duration-300 hover:shadow-md hover:border-gray-200">
           <div className="flex flex-col">
             <span className="text-gray-400 text-sm font-semibold mb-1">Total Outcome</span>
-            <span className="text-black font-extrabold text-2xl leading-none">Rp 9.800.000</span>
+            <span className="text-black font-extrabold text-2xl leading-none">{formatCurrency(totalOutcome)}</span>
             <span className="text-red-500 font-bold text-xs mt-2 flex items-center gap-1">
               <IoTrendingDownOutline className="w-4 h-4" /> +8.2% vs last month
             </span>
@@ -185,7 +234,7 @@ const Dashboard = () => {
         <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex items-center justify-between transition-all duration-300 hover:shadow-md hover:border-gray-200">
           <div className="flex flex-col">
             <span className="text-gray-400 text-sm font-semibold mb-1">Total Saving</span>
-            <span className="text-black font-extrabold text-2xl leading-none">Rp 8.450.000</span>
+            <span className="text-black font-extrabold text-2xl leading-none">{formatCurrency(totalSaving)}</span>
             <span className="text-blue font-bold text-xs mt-2 flex items-center gap-1">
               <IoWalletOutline className="w-4 h-4" /> 46.3% saving rate
             </span>
@@ -218,7 +267,7 @@ const Dashboard = () => {
           <div className="w-full h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={monthlyData}
+                data={monthlyChartData}
                 margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -266,7 +315,7 @@ const Dashboard = () => {
           <div className="flex-1 flex flex-col justify-center gap-3 w-full">
             {/* Add Income */}
             <button 
-              onClick={() => console.log("Add Income clicked")}
+              onClick={() => navigate("/transactions")}
               className="w-full py-2.5 px-3 rounded-xl bg-green-50 hover:bg-green-100/80 text-green-600 border border-green-100/30 flex items-center justify-between transition-all cursor-pointer group"
             >
               <div className="flex items-center gap-3">
@@ -283,7 +332,7 @@ const Dashboard = () => {
 
             {/* Add Expense */}
             <button 
-              onClick={() => console.log("Add Expense clicked")}
+              onClick={() => navigate("/transactions")}
               className="w-full py-2.5 px-3 rounded-xl bg-red-50 hover:bg-red-100/80 text-red-600 border border-red-100/30 flex items-center justify-between transition-all cursor-pointer group"
             >
               <div className="flex items-center gap-3">
@@ -300,7 +349,7 @@ const Dashboard = () => {
 
             {/* Transfer Funds */}
             <button 
-              onClick={() => console.log("Transfer clicked")}
+              onClick={() => navigate("/transactions")}
               className="w-full py-2.5 px-3 rounded-xl bg-blue/5 hover:bg-blue/10/80 text-blue border border-blue/10 flex items-center justify-between transition-all cursor-pointer group"
             >
               <div className="flex items-center gap-3">
@@ -332,7 +381,7 @@ const Dashboard = () => {
           <div className="w-full h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
-                data={dailyData}
+                data={dailyExpensesData}
                 margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
               >
                 <defs>
@@ -379,27 +428,43 @@ const Dashboard = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto max-h-[220px] pr-1 flex flex-col gap-4">
-            {activities.map((activity) => {
-              const Icon = activity.icon;
-              return (
-                <div key={activity.id} className="flex items-center justify-between py-1 border-b border-gray-50 last:border-b-0">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl ${activity.bgColor} flex items-center justify-center flex-shrink-0`}>
-                      <Icon className="w-5 h-5" />
+            {recentActivities.length > 0 ? (
+              recentActivities.map((activity) => {
+                const categoryObj = categories.find(c => c.name === activity.category);
+                const iconName = categoryObj?.iconName || "IoCashOutline";
+                const Icon = iconMap[iconName] || IoCashOutline;
+                const bgColorClass = categoryObj?.bgColor || "bg-gray-100 text-gray-600";
+
+                // Format display date
+                let displayDate = activity.date;
+                if (activity.date.includes("-")) {
+                  const parts = activity.date.split("-");
+                  const dateObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+                  displayDate = dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+                }
+
+                return (
+                  <div key={activity.id} className="flex items-center justify-between py-1 border-b border-gray-50 last:border-b-0">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl ${bgColorClass} flex items-center justify-center flex-shrink-0`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-black font-bold text-sm leading-tight">{activity.title}</p>
+                        <p className="text-gray-400 text-[10px] mt-1">{displayDate}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-black font-bold text-sm leading-tight">{activity.title}</p>
-                      <p className="text-gray-400 text-[10px] mt-1">{activity.date}</p>
-                    </div>
+                    <span className={`font-extrabold text-sm ${
+                      activity.type === "income" ? "text-green-600" : "text-black"
+                    }`}>
+                      {activity.type === "income" ? "+" : ""}{formatCurrency(activity.amount)}
+                    </span>
                   </div>
-                  <span className={`font-extrabold text-sm ${
-                    activity.type === "income" ? "text-green-600" : "text-black"
-                  }`}>
-                    {activity.type === "income" ? "+" : ""}{formatCurrency(activity.amount)}
-                  </span>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <p className="text-gray-400 text-center text-xs font-semibold py-8">No transactions logged yet.</p>
+            )}
           </div>
         </div>
         

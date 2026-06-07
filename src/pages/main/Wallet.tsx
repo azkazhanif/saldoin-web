@@ -44,6 +44,16 @@ const Wallet = () => {
     accountNumber: ""
   });
 
+  // Load from localStorage on mount
+  React.useEffect(() => {
+    const localWallets = localStorage.getItem("saldooin_wallets");
+    if (localWallets) {
+      setWallets(JSON.parse(localWallets));
+    } else {
+      localStorage.setItem("saldooin_wallets", JSON.stringify(wallets));
+    }
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -66,8 +76,9 @@ const Wallet = () => {
       accountNumber: formattedAccount
     };
 
-    // Append to list and reset state
-    setWallets([...wallets, createdWallet]);
+    const updatedWallets = [...wallets, createdWallet];
+    setWallets(updatedWallets);
+    localStorage.setItem("saldooin_wallets", JSON.stringify(updatedWallets));
     setIsModalOpen(false);
     setNewWallet({
       name: "",
