@@ -14,6 +14,62 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
+const walletColorSwatches = [
+  "#3B82F6", // Blue (BCA)
+  "#4F46E5", // Indigo (Mandiri)
+  "#06B6D4", // Cyan (GoPay)
+  "#8B5CF6", // Purple (OVO)
+  "#10B981", // Emerald (Cash)
+  "#EF4444", // Red
+  "#F59E0B", // Amber
+  "#EC4899", // Pink
+  "#1E293B", // Dark Slate
+];
+
+const getProviderDefaultColor = (provider: string) => {
+  switch (provider) {
+    case "BCA":
+      return "#3B82F6";
+    case "Mandiri":
+      return "#4F46E5";
+    case "GoPay":
+      return "#06B6D4";
+    case "OVO":
+      return "#8B5CF6";
+    case "Cash":
+      return "#10B981";
+    default:
+      return "#64748B";
+  }
+};
+
+const getWalletGradientStyle = (hexColor: string) => {
+  const darkenHex = (hex: string, percent: number) => {
+    let num = parseInt(hex.replace("#", ""), 16),
+      amt = Math.round(2.55 * percent),
+      R = (num >> 16) - amt,
+      G = ((num >> 8) & 0x00ff) - amt,
+      B = (num & 0x0000ff) - amt;
+    return (
+      "#" +
+      (
+        0x1000000 +
+        (R < 255 ? (R < 0 ? 0 : R) : 255) * 0x10000 +
+        (G < 255 ? (G < 0 ? 0 : G) : 255) * 0x100 +
+        (B < 255 ? (B < 0 ? 0 : B) : 255)
+      )
+        .toString(16)
+        .slice(1)
+    );
+  };
+
+  const startColor = hexColor || "#3B82F6";
+  const endColor = darkenHex(startColor, 25);
+  return {
+    background: `linear-gradient(135deg, ${startColor} 0%, ${endColor} 100%)`,
+  };
+};
+
 interface WalletItem {
   id: string;
   name: string;
@@ -21,6 +77,7 @@ interface WalletItem {
   provider: string;
   balance: number;
   initialBalance: number;
+  color: string;
 }
 
 const Wallet = () => {
@@ -42,6 +99,7 @@ const Wallet = () => {
     type: "Bank",
     provider: "BCA",
     balance: 0,
+    color: "#3B82F6",
   });
 
   // Edit Form states
@@ -50,6 +108,7 @@ const Wallet = () => {
     type: "Bank",
     provider: "BCA",
     balance: 0,
+    color: "#3B82F6",
   });
 
   const loadData = async () => {
@@ -99,6 +158,7 @@ const Wallet = () => {
           provider: w.provider,
           balance: currentBalance,
           initialBalance: Number(w.initial_balance),
+          color: w.color || getProviderDefaultColor(w.provider),
         };
       });
 
@@ -150,6 +210,7 @@ const Wallet = () => {
         initial_balance: newWallet.balance,
         account_number: "", // No longer input by user, saved as empty string
         is_active: true,
+        color: newWallet.color,
       });
 
       if (error) {
@@ -164,6 +225,7 @@ const Wallet = () => {
         type: "Bank",
         provider: "BCA",
         balance: 0,
+        color: "#3B82F6",
       });
     } catch (err) {
       console.error(err);
@@ -193,6 +255,7 @@ const Wallet = () => {
           type: dbType,
           provider: editWallet.provider,
           initial_balance: editWallet.balance,
+          color: editWallet.color,
         })
         .eq("id", selectedWallet.id);
 
@@ -257,26 +320,6 @@ const Wallet = () => {
         {/* Responsive Grid list of wallets (cols-2 on mobile, cols-3 on desktop) */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {wallets.map((wallet) => {
-            // Select gradient template based on provider
-            let gradientClass =
-              "bg-gradient-to-br from-gray-700 to-gray-900 text-white";
-            if (wallet.provider === "BCA") {
-              gradientClass =
-                "bg-gradient-to-br from-blue-800 to-slate-900 text-white";
-            } else if (wallet.provider === "Mandiri") {
-              gradientClass =
-                "bg-gradient-to-br from-indigo-950 to-blue-900 text-white";
-            } else if (wallet.provider === "GoPay") {
-              gradientClass =
-                "bg-gradient-to-br from-cyan-600 to-blue-800 text-white";
-            } else if (wallet.provider === "OVO") {
-              gradientClass =
-                "bg-gradient-to-br from-purple-800 to-slate-900 text-white";
-            } else if (wallet.provider === "Cash") {
-              gradientClass =
-                "bg-gradient-to-br from-emerald-600 to-teal-800 text-white";
-            }
-
             return (
               <div
                 key={wallet.id}
@@ -286,7 +329,8 @@ const Wallet = () => {
                   setIsEditing(false);
                   setIsDetailOpen(true);
                 }}
-                className={`${gradientClass} rounded-3xl p-5 shadow-sm relative overflow-hidden h-44 flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 cursor-pointer`}
+                style={getWalletGradientStyle(wallet.color)}
+                className="rounded-3xl p-5 shadow-sm relative overflow-hidden h-44 flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 cursor-pointer text-white"
               >
                 <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-xl animate-pulse" />
 
@@ -388,13 +432,14 @@ const Wallet = () => {
                       ...newWallet,
                       type,
                       provider,
+                      color: getProviderDefaultColor(provider),
                     });
                   }}
-                  className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white"
+                  className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white font-semibold"
                 >
-                  <option value="Bank">Bank Account</option>
-                  <option value="E-Wallet">E-Wallet</option>
-                  <option value="Cash">Cash / Dompet</option>
+                  <option value="Bank" className="font-semibold">Bank Account</option>
+                  <option value="E-Wallet" className="font-semibold">E-Wallet</option>
+                  <option value="Cash" className="font-semibold">Cash / Dompet</option>
                 </select>
               </div>
 
@@ -406,10 +451,15 @@ const Wallet = () => {
                   </label>
                   <select
                     value={newWallet.provider}
-                    onChange={(e) =>
-                      setNewWallet({ ...newWallet, provider: e.target.value })
-                    }
-                    className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white"
+                    onChange={(e) => {
+                      const provider = e.target.value;
+                      setNewWallet({
+                        ...newWallet,
+                        provider,
+                        color: getProviderDefaultColor(provider),
+                      });
+                    }}
+                    className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white font-semibold"
                   >
                     {newWallet.type === "Bank" ? (
                       <>
@@ -427,6 +477,30 @@ const Wallet = () => {
                   </select>
                 </div>
               )}
+
+              {/* Wallet Color */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-gray-500">
+                  Wallet Color
+                </label>
+                <div className="flex flex-wrap gap-2.5 py-1">
+                  {walletColorSwatches.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() =>
+                        setNewWallet({ ...newWallet, color })
+                      }
+                      className="w-7 h-7 rounded-full cursor-pointer transition-transform hover:scale-110 flex items-center justify-center relative shadow-sm border border-black/10"
+                      style={{ backgroundColor: color }}
+                    >
+                      {newWallet.color === color && (
+                        <div className="absolute inset-0 rounded-full border-2 border-white ring-2 ring-slate-800" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {/* Initial Balance */}
               <div className="flex flex-col gap-1">
@@ -525,13 +599,14 @@ const Wallet = () => {
                           ...editWallet,
                           type,
                           provider,
+                          color: getProviderDefaultColor(provider),
                         });
                       }}
-                      className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white"
+                      className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white font-semibold"
                     >
-                      <option value="Bank">Bank Account</option>
-                      <option value="E-Wallet">E-Wallet</option>
-                      <option value="Cash">Cash / Dompet</option>
+                      <option value="Bank" className="font-semibold">Bank Account</option>
+                      <option value="E-Wallet" className="font-semibold">E-Wallet</option>
+                      <option value="Cash" className="font-semibold">Cash / Dompet</option>
                     </select>
                   </div>
 
@@ -543,10 +618,15 @@ const Wallet = () => {
                       </label>
                       <select
                         value={editWallet.provider}
-                        onChange={(e) =>
-                          setEditWallet({ ...editWallet, provider: e.target.value })
-                        }
-                        className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white"
+                        onChange={(e) => {
+                          const provider = e.target.value;
+                          setEditWallet({
+                            ...editWallet,
+                            provider,
+                            color: getProviderDefaultColor(provider),
+                          });
+                        }}
+                        className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white font-semibold"
                       >
                         {editWallet.type === "Bank" ? (
                           <>
@@ -564,6 +644,30 @@ const Wallet = () => {
                       </select>
                     </div>
                   )}
+
+                  {/* Wallet Color */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-gray-500">
+                      Wallet Color
+                    </label>
+                    <div className="flex flex-wrap gap-2.5 py-1">
+                      {walletColorSwatches.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() =>
+                            setEditWallet({ ...editWallet, color })
+                          }
+                          className="w-7 h-7 rounded-full cursor-pointer transition-transform hover:scale-110 flex items-center justify-center relative shadow-sm border border-black/10"
+                          style={{ backgroundColor: color }}
+                        >
+                          {editWallet.color === color && (
+                            <div className="absolute inset-0 rounded-full border-2 border-white ring-2 ring-slate-800" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
                   {/* Initial Balance */}
                   <div className="flex flex-col gap-1">
@@ -620,14 +724,8 @@ const Wallet = () => {
 
                 {/* Card Visual Recap */}
                 <div 
-                  className={`rounded-3xl p-5 shadow-md relative overflow-hidden h-44 flex flex-col justify-between ${
-                    selectedWallet.provider === "BCA" ? "bg-gradient-to-br from-blue-800 to-slate-900 text-white" :
-                    selectedWallet.provider === "Mandiri" ? "bg-gradient-to-br from-indigo-950 to-blue-900 text-white" :
-                    selectedWallet.provider === "GoPay" ? "bg-gradient-to-br from-cyan-600 to-blue-800 text-white" :
-                    selectedWallet.provider === "OVO" ? "bg-gradient-to-br from-purple-800 to-slate-900 text-white" :
-                    selectedWallet.provider === "Cash" ? "bg-gradient-to-br from-emerald-600 to-teal-800 text-white" :
-                    "bg-gradient-to-br from-gray-700 to-gray-900 text-white"
-                  }`}
+                  style={getWalletGradientStyle(selectedWallet.color)}
+                  className="rounded-3xl p-5 shadow-md relative overflow-hidden h-44 flex flex-col justify-between text-white"
                 >
                   <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-xl" />
                   <div className="flex justify-between items-center z-10">
@@ -684,6 +782,7 @@ const Wallet = () => {
                         type: selectedWallet.type,
                         provider: selectedWallet.provider,
                         balance: selectedWallet.initialBalance,
+                        color: selectedWallet.color,
                       });
                       setIsEditing(true);
                     }}
