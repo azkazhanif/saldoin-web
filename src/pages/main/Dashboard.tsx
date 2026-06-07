@@ -372,57 +372,47 @@ const Dashboard = () => {
             <p className="text-gray-400 text-xs mt-0.5">Manage your transactions instantly</p>
           </div>
 
-          <div className="flex-1 flex flex-col justify-center gap-3 w-full">
-            {/* Add Income */}
-            <button 
-              onClick={() => navigate("/transactions")}
-              className="w-full py-2.5 px-3 rounded-xl bg-green-50 hover:bg-green-100/80 text-green-600 border border-green-100/30 flex items-center justify-between transition-all cursor-pointer group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-green-600 text-white flex items-center justify-center flex-shrink-0">
+          <div className="flex-1 flex items-center justify-center w-full">
+            <div className="grid grid-cols-3 gap-3 w-full">
+              {/* Add Income */}
+              <button 
+                onClick={() => navigate("/transactions")}
+                className="aspect-square rounded-2xl bg-gradient-to-tr from-green-50 to-emerald-50/30 hover:from-green-100/80 hover:to-emerald-100/50 hover:shadow-lg hover:shadow-green-100/40 border border-green-100/50 flex flex-col items-center justify-center gap-2 transition-all duration-300 cursor-pointer group p-2 hover:scale-[1.03] active:scale-95"
+              >
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-green-200/50 group-hover:scale-110 transition-transform duration-300">
                   <IoTrendingUpOutline className="w-5 h-5" />
                 </div>
-                <div className="text-left">
-                  <p className="font-extrabold text-xs leading-tight text-green-700">Add Income</p>
-                  <p className="text-[10px] text-green-600/70 mt-0.5">Receive funds to wallet</p>
+                <div className="text-center">
+                  <p className="font-extrabold text-[11px] leading-tight text-green-700">Add Income</p>
                 </div>
-              </div>
-              <span className="text-green-600 group-hover:translate-x-1 transition-transform text-sm font-extrabold">&rarr;</span>
-            </button>
+              </button>
 
-            {/* Add Expense */}
-            <button 
-              onClick={() => navigate("/transactions")}
-              className="w-full py-2.5 px-3 rounded-xl bg-red-50 hover:bg-red-100/80 text-red-600 border border-red-100/30 flex items-center justify-between transition-all cursor-pointer group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-red-600 text-white flex items-center justify-center flex-shrink-0">
+              {/* Add Expense */}
+              <button 
+                onClick={() => navigate("/transactions")}
+                className="aspect-square rounded-2xl bg-gradient-to-tr from-red-50 to-rose-50/30 hover:from-red-100/80 hover:to-rose-100/50 hover:shadow-lg hover:shadow-red-100/40 border border-red-100/50 flex flex-col items-center justify-center gap-2 transition-all duration-300 cursor-pointer group p-2 hover:scale-[1.03] active:scale-95"
+              >
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-red-200/50 group-hover:scale-110 transition-transform duration-300">
                   <IoTrendingDownOutline className="w-5 h-5" />
                 </div>
-                <div className="text-left">
-                  <p className="font-extrabold text-xs leading-tight text-red-700">Add Expense</p>
-                  <p className="text-[10px] text-red-600/70 mt-0.5">Log an outgoing payment</p>
+                <div className="text-center">
+                  <p className="font-extrabold text-[11px] leading-tight text-red-700">Add Expense</p>
                 </div>
-              </div>
-              <span className="text-red-600 group-hover:translate-x-1 transition-transform text-sm font-extrabold">&rarr;</span>
-            </button>
+              </button>
 
-            {/* Transfer Funds */}
-            <button 
-              onClick={() => navigate("/transactions")}
-              className="w-full py-2.5 px-3 rounded-xl bg-blue/5 hover:bg-blue/10/80 text-blue border border-blue/10 flex items-center justify-between transition-all cursor-pointer group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-blue text-white flex items-center justify-center flex-shrink-0">
+              {/* Transfer Funds */}
+              <button 
+                onClick={() => navigate("/transactions")}
+                className="aspect-square rounded-2xl bg-gradient-to-tr from-blue/5 to-indigo-50/10 hover:from-blue/10 hover:to-indigo-100/30 hover:shadow-lg hover:shadow-blue-100/40 border border-blue/20 flex flex-col items-center justify-center gap-2 transition-all duration-300 cursor-pointer group p-2 hover:scale-[1.03] active:scale-95"
+              >
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue to-indigo-600 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-blue-200/50 group-hover:scale-110 transition-transform duration-300">
                   <IoRepeatOutline className="w-5 h-5" />
                 </div>
-                <div className="text-left">
-                  <p className="font-extrabold text-xs leading-tight text-blue-700">Transfer Funds</p>
-                  <p className="text-[10px] text-blue/60 mt-0.5">Move money to other users</p>
+                <div className="text-center">
+                  <p className="font-extrabold text-[11px] leading-tight text-blue-700">Transfer Funds</p>
                 </div>
-              </div>
-              <span className="text-blue group-hover:translate-x-1 transition-transform text-sm font-extrabold">&rarr;</span>
-            </button>
+              </button>
+            </div>
           </div>
         </div>
 
