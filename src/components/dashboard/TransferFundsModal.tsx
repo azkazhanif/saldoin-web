@@ -12,6 +12,7 @@ interface TransferFundsModalProps {
     amount: number;
     note: string;
     date: string;
+    adminFee?: number;
   }) => Promise<void>;
 }
 
@@ -26,6 +27,8 @@ const TransferFundsModal: React.FC<TransferFundsModalProps> = ({
   const [amount, setAmount] = useState<number | "">("");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [hasAdminFee, setHasAdminFee] = useState(false);
+  const [adminFee, setAdminFee] = useState<number | "">(6500);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -34,6 +37,8 @@ const TransferFundsModal: React.FC<TransferFundsModalProps> = ({
       setAmount("");
       setNote("");
       setDate(new Date().toISOString().split("T")[0]);
+      setHasAdminFee(false);
+      setAdminFee(6500);
       setError("");
       
       if (wallets.length > 0) {
@@ -70,11 +75,18 @@ const TransferFundsModal: React.FC<TransferFundsModalProps> = ({
       setError("Please enter a valid amount.");
       return;
     }
+    if (hasAdminFee && (adminFee === "" || Number(adminFee) < 0)) {
+      setError("Please enter a valid admin fee amount.");
+      return;
+    }
+
+    const feeAmount = hasAdminFee && adminFee !== "" ? Number(adminFee) : 0;
+    const totalAmountRequired = Number(amount) + feeAmount;
 
     // Balance check
-    if (selectedSourceWallet && selectedSourceWallet.balance < Number(amount)) {
+    if (selectedSourceWallet && selectedSourceWallet.balance < totalAmountRequired) {
       setError(
-        `Insufficient funds in wallet "${selectedSourceWallet.name}"! Available balance: Rp ${selectedSourceWallet.balance.toLocaleString("id-ID")}`
+        `Insufficient funds in wallet "${selectedSourceWallet.name}"! Available balance: Rp ${selectedSourceWallet.balance.toLocaleString("id-ID")}. Total required (with fee): Rp ${totalAmountRequired.toLocaleString("id-ID")}`
       );
       return;
     }
@@ -88,6 +100,7 @@ const TransferFundsModal: React.FC<TransferFundsModalProps> = ({
         amount: Number(amount),
         note,
         date,
+        adminFee: hasAdminFee && adminFee !== "" ? Number(adminFee) : undefined,
       });
       onClose();
     } catch (err: any) {
@@ -201,6 +214,36 @@ const TransferFundsModal: React.FC<TransferFundsModalProps> = ({
               onChange={(e) => setDate(e.target.value)}
               className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white"
             />
+          </div>
+
+          {/* Admin Fee Checkbox */}
+          <div className="flex flex-col gap-2 mt-1">
+            <div className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                id="transferAdminFeeCheckbox"
+                checked={hasAdminFee}
+                onChange={(e) => setHasAdminFee(e.target.checked)}
+                className="w-4 h-4 rounded text-blue border-gray-300 focus:ring-blue cursor-pointer"
+              />
+              <label htmlFor="transferAdminFeeCheckbox" className="text-xs font-bold text-gray-500 cursor-pointer select-none">
+                Add Admin Fee (Didebit terpisah dari sumber)
+              </label>
+            </div>
+
+            {hasAdminFee && (
+              <div className="flex flex-col gap-1 pl-6 animate-in slide-in-from-top-1 duration-200">
+                <label className="text-xs font-bold text-gray-400">Admin Fee Amount (IDR)</label>
+                <input
+                  type="number"
+                  required
+                  placeholder="e.g. 6500"
+                  value={adminFee}
+                  onChange={(e) => setAdminFee(e.target.value === "" ? "" : Number(e.target.value))}
+                  className="border border-gray-200 rounded-xl px-3 py-1.5 text-sm text-black focus:outline-none focus:border-blue bg-white"
+                />
+              </div>
+            )}
           </div>
 
           {/* Form Actions */}

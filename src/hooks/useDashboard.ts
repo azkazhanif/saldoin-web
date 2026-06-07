@@ -258,6 +258,7 @@ export const useDashboard = () => {
     categoryId: string;
     walletId: string;
     date: string;
+    adminFee?: number;
   }) => {
     if (!user) throw new Error("User not authenticated.");
 
@@ -274,6 +275,23 @@ export const useDashboard = () => {
       });
 
     if (error) throw error;
+
+    if (params.adminFee && params.adminFee > 0) {
+      const { error: feeError } = await supabase
+        .from("transactions")
+        .insert({
+          user_id: user.id,
+          wallet_id: params.walletId,
+          type: "outcome",
+          amount: params.adminFee,
+          category_id: params.categoryId,
+          note: `Biaya Admin - ${params.title}`,
+          date: params.date
+        });
+
+      if (feeError) throw feeError;
+    }
+
     await loadData();
   };
 
@@ -283,6 +301,7 @@ export const useDashboard = () => {
     amount: number;
     note: string;
     date: string;
+    adminFee?: number;
   }) => {
     if (!user) throw new Error("User not authenticated.");
     if (params.sourceWalletId === params.destWalletId) {
@@ -346,6 +365,22 @@ export const useDashboard = () => {
       });
 
     if (incomeError) throw incomeError;
+
+    if (params.adminFee && params.adminFee > 0) {
+      const { error: feeError } = await supabase
+        .from("transactions")
+        .insert({
+          user_id: user.id,
+          wallet_id: params.sourceWalletId,
+          type: "outcome",
+          amount: params.adminFee,
+          category_id: transferCatId,
+          note: `Biaya Admin Transfer - ${params.note || `Transfer to ${destWalletName}`}`,
+          date: params.date
+        });
+
+      if (feeError) throw feeError;
+    }
 
     await loadData();
   };

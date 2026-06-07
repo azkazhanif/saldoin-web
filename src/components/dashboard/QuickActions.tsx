@@ -19,6 +19,7 @@ interface QuickActionsProps {
     categoryId: string;
     walletId: string;
     date: string;
+    adminFee?: number;
   }) => Promise<void>;
   transferFunds: (data: {
     sourceWalletId: string;
@@ -26,6 +27,7 @@ interface QuickActionsProps {
     amount: number;
     note: string;
     date: string;
+    adminFee?: number;
   }) => Promise<void>;
 }
 
