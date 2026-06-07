@@ -1,12 +1,7 @@
-import React from "react";
+import MainLayout from "../../layouts/MainLayout";
 
 const Dashboard = () => {
-  return (
-    <div className="grid grid-cols-5">
-      <div className="col-span-1 bg-gray-200 h-screen">Sidebar</div>
-      <div className="col-span-4 p-4">Main Content</div>
-    </div>
-  );
+  return <MainLayout>Dashboard Content</MainLayout>;
 };
 
 export default Dashboard;
