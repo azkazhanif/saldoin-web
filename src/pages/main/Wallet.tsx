@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import MainLayout from "../../layouts/MainLayout";
 import { 
   IoAddOutline, 
   IoCloseOutline
 } from "react-icons/io5";
+import { supabase } from "../../lib/supabaseClient";
+import { useAuth } from "../../contexts/AuthContext";
 
 // Indonesian Rupiah currency formatting utility
 const formatCurrency = (value: number) => {
@@ -25,12 +27,9 @@ interface WalletItem {
 }
 
 const Wallet = () => {
-  // Dynamic list state for wallets
-  const [wallets, setWallets] = useState<WalletItem[]>([
-    { id: "1", name: "BCA Gaji", type: "Bank", provider: "BCA", balance: 8450000, accountNumber: "•••• •••• •••• 4821" },
-    { id: "2", name: "GoPay Utama", type: "E-Wallet", provider: "GoPay", balance: 1250000, accountNumber: "0812 •••• 9923" },
-    { id: "3", name: "Dompet Tunai", type: "Cash", provider: "Cash", balance: 500000, accountNumber: "Cash Wallet" }
-  ]);
+  const { user } = useAuth();
+  const [wallets, setWallets] = useState<WalletItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Modal display toggles
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,18 +43,75 @@ const Wallet = () => {
     accountNumber: ""
   });
 
-  // Load from localStorage on mount
-  React.useEffect(() => {
-    const localWallets = localStorage.getItem("saldooin_wallets");
-    if (localWallets) {
-      setWallets(JSON.parse(localWallets));
-    } else {
-      localStorage.setItem("saldooin_wallets", JSON.stringify(wallets));
-    }
-  }, []);
+  const loadData = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      // 1. Fetch Wallets
+      const { data: walletsData, error: walletError } = await supabase
+        .from("wallets")
+        .select("*")
+        .eq("user_id", user.id);
 
-  const handleSubmit = (e: React.FormEvent) => {
+      if (walletError) throw walletError;
+
+      // 2. Fetch Transactions (needed to compute live balance)
+      const { data: transactionsData, error: txError } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (txError) throw txError;
+
+      const loadedWallets = (walletsData || []).map((w) => {
+        // Calculate balance dynamically
+        const walletTransactions = (transactionsData || []).filter(t => t.wallet_id === w.id);
+        const incomeSum = walletTransactions
+          .filter(t => t.type === "income")
+          .reduce((sum, t) => sum + Number(t.amount), 0);
+        const outcomeSum = walletTransactions
+          .filter(t => t.type === "outcome" || t.type === "expense")
+          .reduce((sum, t) => sum + Number(t.amount), 0);
+
+        const currentBalance = Number(w.initial_balance) + incomeSum - outcomeSum;
+
+        return {
+          id: w.id,
+          name: w.name,
+          type: w.type === "bank" ? "Bank" : (w.type === "ewallet" ? "E-Wallet" : "Cash"),
+          provider: w.provider,
+          balance: currentBalance,
+          accountNumber: w.account_number || ""
+        };
+      });
+
+      setWallets(loadedWallets);
+    } catch (err) {
+      console.error("Error fetching wallets:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center min-h-[400px]">
+          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-400 text-sm font-semibold mt-4 animate-pulse">Loading wallets...</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
 
     // Prepare wallet account format
     let formattedAccount = newWallet.accountNumber;
@@ -67,27 +123,41 @@ const Wallet = () => {
       formattedAccount = "Cash Wallet";
     }
 
-    const createdWallet: WalletItem = {
-      id: Date.now().toString(),
-      name: newWallet.name,
-      type: newWallet.type,
-      provider: newWallet.provider,
-      balance: newWallet.balance,
-      accountNumber: formattedAccount
-    };
+    const dbType = newWallet.type === "Bank" ? "bank" : (newWallet.type === "E-Wallet" ? "ewallet" : "cash");
 
-    const updatedWallets = [...wallets, createdWallet];
-    setWallets(updatedWallets);
-    localStorage.setItem("saldooin_wallets", JSON.stringify(updatedWallets));
-    setIsModalOpen(false);
-    setNewWallet({
-      name: "",
-      type: "Bank",
-      provider: "BCA",
-      balance: 0,
-      accountNumber: ""
-    });
+    try {
+      const { error } = await supabase
+        .from("wallets")
+        .insert({
+          user_id: user.id,
+          name: newWallet.name,
+          type: dbType,
+          provider: newWallet.provider,
+          initial_balance: newWallet.balance,
+          account_number: formattedAccount,
+          is_active: true
+        });
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      await loadData();
+      setIsModalOpen(false);
+      setNewWallet({
+        name: "",
+        type: "Bank",
+        provider: "BCA",
+        balance: 0,
+        accountNumber: ""
+      });
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save wallet.");
+    }
   };
+
 
   return (
     <MainLayout>

@@ -30,6 +30,8 @@ import {
   IoPeopleOutline,
   IoStorefrontOutline
 } from "react-icons/io5";
+import { supabase } from "../../lib/supabaseClient";
+import { useAuth } from "../../contexts/AuthContext";
 
 // Map icon string names to actual react-icons
 const iconMap: Record<string, any> = {
@@ -49,38 +51,18 @@ const iconMap: Record<string, any> = {
   IoRepeatOutline: IoRepeatOutline
 };
 
-const defaultTransactions = [
-  { id: "1", title: "Salary Payment", category: "Gaji", date: "2026-06-07", amount: 15000000, type: "income", walletId: "1" },
-  { id: "2", title: "Starbucks Coffee", category: "Makan & Minum", date: "2026-06-06", amount: 55000, type: "outcome", walletId: "2" },
-  { id: "3", title: "Supermarket Groceries", category: "Belanja", date: "2026-06-05", amount: 450000, type: "outcome", walletId: "2" },
-  { id: "4", title: "Steam Game Purchase", category: "Hiburan", date: "2026-06-04", amount: 250000, type: "outcome", walletId: "2" },
-  { id: "5", title: "Electricity Bill", category: "Tagihan", date: "2026-06-03", amount: 850000, type: "outcome", walletId: "3" },
-  { id: "6", title: "Freelance Design Fee", category: "Freelance", date: "2026-06-02", amount: 3250000, type: "income", walletId: "1" }
-];
-
-const defaultWallets = [
-  { id: "1", name: "BCA Gaji", type: "Bank", provider: "BCA", balance: 8450000, accountNumber: "•••• •••• •••• 4821" },
-  { id: "2", name: "GoPay Utama", type: "E-Wallet", provider: "GoPay", balance: 1250000, accountNumber: "0812 •••• 9923" },
-  { id: "3", name: "Dompet Tunai", type: "Cash", provider: "Cash", balance: 500000, accountNumber: "Cash Wallet" }
-];
-
-const defaultCategories = [
-  { id: "1", name: "Gaji", budget: 18250000, type: "income", color: "bg-green-600", bgColor: "bg-green-50 text-green-600", iconName: "IoBriefcaseOutline" },
-  { id: "2", name: "Freelance", budget: 3250000, type: "income", color: "bg-emerald-600", bgColor: "bg-emerald-50 text-emerald-600", iconName: "IoReceiptOutline" },
-  { id: "3", name: "Bisnis", budget: 0, type: "income", color: "bg-green-700", bgColor: "bg-green-50 text-green-700", iconName: "IoStorefrontOutline" },
-  { id: "4", name: "Transfer Masuk", budget: 0, type: "income", color: "bg-sky-600", bgColor: "bg-sky-50 text-sky-600", iconName: "IoRepeatOutline" },
-  { id: "5", name: "Lain-lain (Income)", budget: 0, type: "income", color: "bg-gray-500", bgColor: "bg-gray-50 text-gray-500", iconName: "IoCashOutline" },
-  { id: "6", name: "Makan & Minum", budget: 5000000, type: "outcome", color: "bg-amber-500", bgColor: "bg-amber-50 text-amber-600", iconName: "IoFastFoodOutline" },
-  { id: "7", name: "Transport", budget: 1500000, type: "outcome", color: "bg-blue", bgColor: "bg-blue/10 text-blue", iconName: "IoCarOutline" },
-  { id: "8", name: "Hiburan", budget: 2000000, type: "outcome", color: "bg-purple-500", bgColor: "bg-purple-50 text-purple-600", iconName: "IoGameControllerOutline" },
-  { id: "9", name: "Kesehatan", budget: 1000000, type: "outcome", color: "bg-red-500", bgColor: "bg-red-50 text-red-600", iconName: "IoHeartOutline" },
-  { id: "10", name: "Belanja", budget: 3000000, type: "outcome", color: "bg-blue-600", bgColor: "bg-blue/10 text-blue-600", iconName: "IoCartOutline" },
-  { id: "11", name: "Tagihan", budget: 4000000, type: "outcome", color: "bg-orange-500", bgColor: "bg-orange-50 text-orange-600", iconName: "IoBulbOutline" },
-  { id: "12", name: "Pendidikan", budget: 0, type: "outcome", color: "bg-teal-600", bgColor: "bg-teal-50 text-teal-600", iconName: "IoBookOutline" },
-  { id: "13", name: "Sosial", budget: 0, type: "outcome", color: "bg-rose-500", bgColor: "bg-rose-50 text-rose-600", iconName: "IoPeopleOutline" },
-  { id: "14", name: "Investasi", budget: 0, type: "outcome", color: "bg-indigo-600", bgColor: "bg-indigo-50 text-indigo-600", iconName: "IoTrendingUpOutline" },
-  { id: "15", name: "Lain-lain", budget: 0, type: "outcome", color: "bg-gray-500", bgColor: "bg-gray-50 text-gray-500", iconName: "IoCashOutline" },
-];
+const getBgColorClass = (color: string) => {
+  if (!color) return "bg-gray-50 text-gray-500";
+  if (color === "bg-blue") return "bg-blue/10 text-blue";
+  if (color.endsWith("-500")) {
+    return `${color.replace("-500", "-50")} text-${color.replace("bg-", "").replace("-500", "-600")}`;
+  }
+  if (color.endsWith("-600") || color.endsWith("-700")) {
+    const baseColor = color.split("-")[1]; // e.g. green or emerald
+    return `bg-${baseColor}-50 text-${baseColor}-600`;
+  }
+  return `${color}/10 text-${color.replace("bg-", "")}`;
+};
 
 // Historical monthly overview base data (updated dynamically for June)
 const baseMonthlyData = [
@@ -132,27 +114,83 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [transactions, setTransactions] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Load from localStorage on mount
+  const loadData = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      // 1. Fetch Categories (system defaults or custom user categories)
+      const { data: categoriesData, error: catError } = await supabase
+        .from("categories")
+        .select("*")
+        .or(`user_id.is.null,user_id.eq.${user.id}`);
+
+      if (catError) throw catError;
+
+      // 2. Fetch Transactions
+      const { data: transactionsData, error: txError } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("date", { ascending: false });
+
+      if (txError) throw txError;
+
+      // Map categories
+      const loadedCats = (categoriesData || []).map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        type: cat.type,
+        color: cat.color || "bg-blue",
+        bgColor: getBgColorClass(cat.color || ""),
+        iconName: cat.icon
+      }));
+
+      // Map transactions
+      const loadedTxs = (transactionsData || []).map((tx) => {
+        const cat = categoriesData?.find(c => c.id === tx.category_id);
+        return {
+          id: tx.id,
+          title: tx.note || "Transaction",
+          category: cat ? cat.name : "Lain-lain",
+          date: tx.date,
+          amount: Number(tx.amount),
+          type: tx.type,
+          walletId: tx.wallet_id
+        };
+      });
+
+      setCategories(loadedCats);
+      setTransactions(loadedTxs);
+    } catch (err) {
+      console.error("Error loading dashboard info:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const localTxs = localStorage.getItem("saldooin_transactions");
-    const localWallets = localStorage.getItem("saldooin_wallets");
-    const localCats = localStorage.getItem("saldooin_categories");
+    loadData();
+  }, [user]);
 
-    const loadedTxs = localTxs ? JSON.parse(localTxs) : defaultTransactions;
-    const loadedCats = localCats ? JSON.parse(localCats) : defaultCategories;
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center min-h-[400px]">
+          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-400 text-sm font-semibold mt-4 animate-pulse">Loading dashboard...</p>
+        </div>
+      </MainLayout>
+    );
+  }
 
-    setTransactions(loadedTxs);
-    setCategories(loadedCats);
 
-    if (!localTxs) localStorage.setItem("saldooin_transactions", JSON.stringify(defaultTransactions));
-    if (!localWallets) localStorage.setItem("saldooin_wallets", JSON.stringify(defaultWallets));
-    if (!localCats) localStorage.setItem("saldooin_categories", JSON.stringify(defaultCategories));
-  }, []);
 
   // Compute live summaries
   const totalIncome = transactions

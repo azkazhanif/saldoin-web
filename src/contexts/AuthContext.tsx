@@ -17,6 +17,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, name: string) => Promise<{ error: any; data: any }>;
+  signInWithOAuth: (provider: "google" | "facebook" | "apple") => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
   sendPasswordReset: (email: string) => Promise<{ error: any }>;
   updatePassword: (password: string) => Promise<{ error: any }>;
@@ -132,6 +133,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error, data };
   };
 
+  const signInWithOAuth = async (provider: "google" | "facebook" | "apple") => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+    return { error };
+  };
+
   const value: AuthContextType = {
     session,
     user,
@@ -139,6 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     signIn,
     signUp,
+    signInWithOAuth,
     signOut,
     sendPasswordReset,
     updatePassword,

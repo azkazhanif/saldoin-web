@@ -21,6 +21,8 @@ import {
   IoTrendingUpOutline,
   IoRepeatOutline
 } from "react-icons/io5";
+import { supabase } from "../../lib/supabaseClient";
+import { useAuth } from "../../contexts/AuthContext";
 
 // Map icon string names to actual react-icons
 const iconMap: Record<string, any> = {
@@ -40,38 +42,18 @@ const iconMap: Record<string, any> = {
   IoRepeatOutline: IoRepeatOutline
 };
 
-const defaultTransactions = [
-  { id: "1", title: "Salary Payment", category: "Gaji", date: "2026-06-07", amount: 15000000, type: "income", walletId: "1" },
-  { id: "2", title: "Starbucks Coffee", category: "Makan & Minum", date: "2026-06-06", amount: 55000, type: "outcome", walletId: "2" },
-  { id: "3", title: "Supermarket Groceries", category: "Belanja", date: "2026-06-05", amount: 450000, type: "outcome", walletId: "2" },
-  { id: "4", title: "Steam Game Purchase", category: "Hiburan", date: "2026-06-04", amount: 250000, type: "outcome", walletId: "2" },
-  { id: "5", title: "Electricity Bill", category: "Tagihan", date: "2026-06-03", amount: 850000, type: "outcome", walletId: "3" },
-  { id: "6", title: "Freelance Design Fee", category: "Freelance", date: "2026-06-02", amount: 3250000, type: "income", walletId: "1" }
-];
-
-const defaultWallets = [
-  { id: "1", name: "BCA Gaji", type: "Bank", provider: "BCA", balance: 8450000, accountNumber: "•••• •••• •••• 4821" },
-  { id: "2", name: "GoPay Utama", type: "E-Wallet", provider: "GoPay", balance: 1250000, accountNumber: "0812 •••• 9923" },
-  { id: "3", name: "Dompet Tunai", type: "Cash", provider: "Cash", balance: 500000, accountNumber: "Cash Wallet" }
-];
-
-const defaultCategories = [
-  { id: "1", name: "Gaji", budget: 18250000, type: "income", color: "bg-green-600", bgColor: "bg-green-50 text-green-600", iconName: "IoBriefcaseOutline" },
-  { id: "2", name: "Freelance", budget: 3250000, type: "income", color: "bg-emerald-600", bgColor: "bg-emerald-50 text-emerald-600", iconName: "IoReceiptOutline" },
-  { id: "3", name: "Bisnis", budget: 0, type: "income", color: "bg-green-700", bgColor: "bg-green-50 text-green-700", iconName: "IoStorefrontOutline" },
-  { id: "4", name: "Transfer Masuk", budget: 0, type: "income", color: "bg-sky-600", bgColor: "bg-sky-50 text-sky-600", iconName: "IoRepeatOutline" },
-  { id: "5", name: "Lain-lain (Income)", budget: 0, type: "income", color: "bg-gray-500", bgColor: "bg-gray-50 text-gray-500", iconName: "IoCashOutline" },
-  { id: "6", name: "Makan & Minum", budget: 5000000, type: "outcome", color: "bg-amber-500", bgColor: "bg-amber-50 text-amber-600", iconName: "IoFastFoodOutline" },
-  { id: "7", name: "Transport", budget: 1500000, type: "outcome", color: "bg-blue", bgColor: "bg-blue/10 text-blue", iconName: "IoCarOutline" },
-  { id: "8", name: "Hiburan", budget: 2000000, type: "outcome", color: "bg-purple-500", bgColor: "bg-purple-50 text-purple-600", iconName: "IoGameControllerOutline" },
-  { id: "9", name: "Kesehatan", budget: 1000000, type: "outcome", color: "bg-red-500", bgColor: "bg-red-50 text-red-600", iconName: "IoHeartOutline" },
-  { id: "10", name: "Belanja", budget: 3000000, type: "outcome", color: "bg-blue-600", bgColor: "bg-blue/10 text-blue-600", iconName: "IoCartOutline" },
-  { id: "11", name: "Tagihan", budget: 4000000, type: "outcome", color: "bg-orange-500", bgColor: "bg-orange-50 text-orange-600", iconName: "IoBulbOutline" },
-  { id: "12", name: "Pendidikan", budget: 0, type: "outcome", color: "bg-teal-600", bgColor: "bg-teal-50 text-teal-600", iconName: "IoBookOutline" },
-  { id: "13", name: "Sosial", budget: 0, type: "outcome", color: "bg-rose-500", bgColor: "bg-rose-50 text-rose-600", iconName: "IoPeopleOutline" },
-  { id: "14", name: "Investasi", budget: 0, type: "outcome", color: "bg-indigo-600", bgColor: "bg-indigo-50 text-indigo-600", iconName: "IoTrendingUpOutline" },
-  { id: "15", name: "Lain-lain", budget: 0, type: "outcome", color: "bg-gray-500", bgColor: "bg-gray-50 text-gray-500", iconName: "IoCashOutline" },
-];
+const getBgColorClass = (color: string) => {
+  if (!color) return "bg-gray-50 text-gray-500";
+  if (color === "bg-blue") return "bg-blue/10 text-blue";
+  if (color.endsWith("-500")) {
+    return `${color.replace("-500", "-50")} text-${color.replace("bg-", "").replace("-500", "-600")}`;
+  }
+  if (color.endsWith("-600") || color.endsWith("-700")) {
+    const baseColor = color.split("-")[1]; // e.g. green or emerald
+    return `bg-${baseColor}-50 text-${baseColor}-600`;
+  }
+  return `${color}/10 text-${color.replace("bg-", "")}`;
+};
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("id-ID", {
@@ -83,9 +65,11 @@ const formatCurrency = (value: number) => {
 };
 
 const Transactions = () => {
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [wallets, setWallets] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"all" | "income" | "outcome">("all");
@@ -111,124 +95,237 @@ const Transactions = () => {
     iconName: "IoCartOutline"
   });
 
-  // Load from localStorage on mount
+  const loadData = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      // 1. Fetch Categories (system defaults or user custom categories)
+      const { data: categoriesData, error: catError } = await supabase
+        .from("categories")
+        .select("*")
+        .or(`user_id.is.null,user_id.eq.${user.id}`);
+
+      if (catError) throw catError;
+
+      // 2. Fetch Wallets
+      const { data: walletsData, error: walletError } = await supabase
+        .from("wallets")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (walletError) throw walletError;
+
+      // 3. Fetch Transactions
+      const { data: transactionsData, error: txError } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("date", { ascending: false });
+
+      if (txError) throw txError;
+
+      // Map categories
+      const loadedCats = (categoriesData || []).map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        type: cat.type,
+        color: cat.color || "bg-blue",
+        bgColor: getBgColorClass(cat.color || ""),
+        iconName: cat.icon
+      }));
+
+      // Calculate dynamic wallet balance by applying transactions in memory
+      const loadedWallets = (walletsData || []).map((w) => {
+        const walletTransactions = (transactionsData || []).filter(t => t.wallet_id === w.id);
+        const incomeSum = walletTransactions
+          .filter(t => t.type === "income")
+          .reduce((sum, t) => sum + Number(t.amount), 0);
+        const outcomeSum = walletTransactions
+          .filter(t => t.type === "outcome" || t.type === "expense")
+          .reduce((sum, t) => sum + Number(t.amount), 0);
+
+        const currentBalance = Number(w.initial_balance) + incomeSum - outcomeSum;
+
+        return {
+          id: w.id,
+          name: w.name,
+          balance: currentBalance,
+          provider: w.provider
+        };
+      });
+
+      // Map transactions to UI-compatible format (using category name instead of UUID)
+      const loadedTxs = (transactionsData || []).map((tx) => {
+        const cat = categoriesData?.find(c => c.id === tx.category_id);
+        return {
+          id: tx.id,
+          title: tx.note || "Transaction",
+          category: cat ? cat.name : "Lain-lain",
+          date: tx.date,
+          amount: Number(tx.amount),
+          type: tx.type,
+          walletId: tx.wallet_id
+        };
+      });
+
+      setCategories(loadedCats);
+      setWallets(loadedWallets);
+      setTransactions(loadedTxs);
+    } catch (err) {
+      console.error("Error loading transactions data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load data on mount / user change
   useEffect(() => {
-    const localTxs = localStorage.getItem("saldooin_transactions");
-    const localWallets = localStorage.getItem("saldooin_wallets");
-    const localCats = localStorage.getItem("saldooin_categories");
+    loadData();
+  }, [user]);
 
-    const loadedTxs = localTxs ? JSON.parse(localTxs) : defaultTransactions;
-    const loadedWallets = localWallets ? JSON.parse(localWallets) : defaultWallets;
-    const loadedCats = localCats ? JSON.parse(localCats) : defaultCategories;
-
-    setTransactions(loadedTxs);
-    setWallets(loadedWallets);
-    setCategories(loadedCats);
-
-    // Seed back if not existing
-    if (!localTxs) localStorage.setItem("saldooin_transactions", JSON.stringify(defaultTransactions));
-    if (!localWallets) localStorage.setItem("saldooin_wallets", JSON.stringify(defaultWallets));
-    if (!localCats) localStorage.setItem("saldooin_categories", JSON.stringify(defaultCategories));
-  }, []);
-
-  // Sync category state selection when categories load
+  // Sync category state selection when categories/wallets change or load
   useEffect(() => {
-    if (categories.length > 0) {
+    if (categories.length > 0 && wallets.length > 0) {
       setNewTx(prev => ({
         ...prev,
-        category: categories[0]?.name || "",
+        category: categories.find(c => c.type === prev.type)?.name || categories[0]?.name || "",
         walletId: wallets[0]?.id || ""
       }));
     }
   }, [categories, wallets]);
 
-  const handleTxSubmit = (e: React.FormEvent) => {
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center min-h-[400px]">
+          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-400 text-sm font-semibold mt-4 animate-pulse">Loading transactions...</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  const handleTxSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
 
-    // Check balance
+    // 1. Find category object by name to get its UUID
+    const matchedCat = categories.find(c => c.name === newTx.category);
+    if (!matchedCat) {
+      alert("Invalid category selected.");
+      return;
+    }
+
+    // 2. Find wallet object
     const targetWallet = wallets.find(w => w.id === newTx.walletId);
-    if (!targetWallet) return;
+    if (!targetWallet) {
+      alert("Invalid wallet selected.");
+      return;
+    }
 
+    // Check balance if expense
     if (newTx.type === "outcome" && targetWallet.balance < newTx.amount) {
       alert(`Insufficient funds in wallet "${targetWallet.name}"! Available balance: ${formatCurrency(targetWallet.balance)}`);
       return;
     }
 
-    // Update Wallet balance
-    const updatedWallets = wallets.map(w => {
-      if (w.id === newTx.walletId) {
-        return {
-          ...w,
-          balance: newTx.type === "income" ? w.balance + newTx.amount : w.balance - newTx.amount
-        };
+    try {
+      // Insert transaction into database
+      const { error } = await supabase
+        .from("transactions")
+        .insert({
+          user_id: user.id,
+          wallet_id: newTx.walletId,
+          type: newTx.type,
+          amount: newTx.amount,
+          category_id: matchedCat.id,
+          note: newTx.title,
+          date: newTx.date
+        });
+
+      if (error) {
+        alert(error.message);
+        return;
       }
-      return w;
-    });
 
-    // Save transaction
-    const createdTx = {
-      id: Date.now().toString(),
-      title: newTx.title,
-      amount: newTx.amount,
-      type: newTx.type,
-      category: newTx.category,
-      walletId: newTx.walletId,
-      date: newTx.date
-    };
-
-    const updatedTxs = [createdTx, ...transactions];
-
-    setWallets(updatedWallets);
-    setTransactions(updatedTxs);
-    localStorage.setItem("saldooin_wallets", JSON.stringify(updatedWallets));
-    localStorage.setItem("saldooin_transactions", JSON.stringify(updatedTxs));
-
-    // Reset Form
-    setIsTxModalOpen(false);
-    setNewTx({
-      title: "",
-      amount: 0,
-      type: "outcome",
-      category: categories[0]?.name || "",
-      walletId: wallets[0]?.id || "",
-      date: new Date().toISOString().split("T")[0]
-    });
+      await loadData();
+      setIsTxModalOpen(false);
+      setNewTx({
+        title: "",
+        amount: 0,
+        type: "outcome",
+        category: categories[0]?.name || "",
+        walletId: wallets[0]?.id || "",
+        date: new Date().toISOString().split("T")[0]
+      });
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save transaction.");
+    }
   };
 
-  const handleCatSubmit = (e: React.FormEvent) => {
+  const handleCatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
 
-    // Set styling colors depending on category type
     let color = "bg-blue";
-    let bgColor = "bg-blue/10 text-blue";
     if (newCat.type === "income") {
       color = "bg-green-600";
-      bgColor = "bg-green-50 text-green-600";
     }
 
-    const createdCat = {
-      id: Date.now().toString(),
-      name: newCat.name,
-      budget: newCat.budget,
-      type: newCat.type,
-      color: color,
-      bgColor: bgColor,
-      iconName: newCat.iconName
-    };
+    try {
+      // 1. Save Category
+      const { data: catData, error: catError } = await supabase
+        .from("categories")
+        .insert({
+          user_id: user.id,
+          name: newCat.name,
+          icon: newCat.iconName,
+          color: color,
+          type: newCat.type,
+          is_default: false
+        })
+        .select()
+        .single();
 
-    const updatedCats = [...categories, createdCat];
+      if (catError) {
+        alert(catError.message);
+        return;
+      }
 
-    setCategories(updatedCats);
-    localStorage.setItem("saldooin_categories", JSON.stringify(updatedCats));
+      // 2. Save Budget if set
+      if (newCat.budget > 0 && catData) {
+        const now = new Date();
+        const { error: budgetError } = await supabase
+          .from("budgets")
+          .insert({
+            user_id: user.id,
+            category_id: catData.id,
+            amount: newCat.budget,
+            period: "monthly",
+            month: now.getMonth() + 1,
+            year: now.getFullYear()
+          });
 
-    setIsCatModalOpen(false);
-    setNewCat({
-      name: "",
-      budget: 0,
-      type: "outcome",
-      iconName: "IoCartOutline"
-    });
+        if (budgetError) {
+          console.error("Error saving budget:", budgetError.message);
+        }
+      }
+
+      await loadData();
+      setIsCatModalOpen(false);
+      setNewCat({
+        name: "",
+        budget: 0,
+        type: "outcome",
+        iconName: "IoCartOutline"
+      });
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to save category.");
+    }
   };
+
 
   // Filter list
   const filteredTransactions = transactions.filter((tx) => {
