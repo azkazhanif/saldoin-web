@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { useAuth } from "../../contexts/AuthContext";
 import MainLayout from "../../layouts/MainLayout";
-import { CategoryCard } from "../../components/categories/CategoryCard";
 import { CategoryModal } from "../../components/categories/CategoryModal";
 import { DeleteCategoryDialog } from "../../components/categories/DeleteCategoryDialog";
 import type { Category, CategoryType } from "../../types/category";
 import { IoAddOutline, IoInformationCircleOutline } from "react-icons/io5";
+import { iconMap } from "../../components/categories/iconHelper";
 
 export const Categories = () => {
   const { user } = useAuth();
@@ -19,6 +19,10 @@ export const Categories = () => {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Pagination States
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const loadData = async () => {
     if (!user) return;
@@ -64,6 +68,10 @@ export const Categories = () => {
   useEffect(() => {
     loadData();
   }, [user, activeTab]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
 
   const handleOpenAddModal = () => {
     setSelectedCategory(null);
@@ -181,6 +189,14 @@ export const Categories = () => {
     }
   };
 
+  // Pagination calculation
+  const totalPages = Math.ceil(categories.length / itemsPerPage);
+  const safeCurrentPage = Math.min(currentPage, Math.max(totalPages, 1));
+  const paginatedCategories = categories.slice(
+    (safeCurrentPage - 1) * itemsPerPage,
+    safeCurrentPage * itemsPerPage
+  );
+
   return (
     <MainLayout>
       <div className="flex flex-col gap-6">
@@ -234,7 +250,7 @@ export const Categories = () => {
           </button>
         </div>
 
-        {/* Categories Grid */}
+        {/* Categories List */}
         {loading ? (
           <div className="flex flex-col items-center justify-center min-h-[250px]">
             <div className="w-8 h-8 border-4 border-[#1A6B3C] border-t-transparent rounded-full animate-spin"></div>
@@ -243,19 +259,138 @@ export const Categories = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
-            {categories.map((cat) => (
-              <CategoryCard key={cat.id} category={cat} onClick={() => handleOpenEditModal(cat)} />
-            ))}
+          <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm flex flex-col justify-between">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-100 text-gray-400 text-xs font-bold uppercase tracking-wider bg-gray-50/50">
+                    <th className="py-4 px-6">Category</th>
+                    <th className="py-4 px-6">Tipe</th>
+                    <th className="py-4 px-6 text-center">Transaksi</th>
+                    <th className="py-4 px-6">Status</th>
+                    <th className="py-4 px-6 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 text-sm">
+                  {paginatedCategories.map((cat) => {
+                    const IconComponent = iconMap[cat.icon] || iconMap["Gift"];
+                    return (
+                      <tr key={cat.id} className="hover:bg-gray-50/30 transition-colors">
+                        {/* Column 1: Icon & Name */}
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                              style={{
+                                backgroundColor: `${cat.color}15`,
+                                color: cat.color,
+                              }}
+                            >
+                              <IconComponent className="w-5 h-5" />
+                            </div>
+                            <span className="font-extrabold text-black">{cat.name}</span>
+                          </div>
+                        </td>
 
-            {/* "+ Tambah Baru" Card */}
-            <button
-              onClick={handleOpenAddModal}
-              className="border border-dashed border-gray-200 hover:border-gray-300 hover:bg-gray-50 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all cursor-pointer min-h-[120px] text-gray-400 hover:text-gray-600"
-            >
-              <IoAddOutline className="w-6 h-6" />
-              <span className="font-bold text-[13px]">Tambah baru</span>
-            </button>
+                        {/* Column 2: Type badge */}
+                        <td className="py-4 px-6">
+                          {cat.type === "expense" ? (
+                            <span className="text-[10px] bg-red-50 border border-red-100/50 text-red-600 font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                              Pengeluaran
+                            </span>
+                          ) : (
+                            <span className="text-[10px] bg-emerald-50 border border-emerald-100/50 text-emerald-600 font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                              Pemasukan
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Column 3: Transaction Count */}
+                        <td className="py-4 px-6 text-center text-gray-500 font-bold">
+                          {cat.transaction_count || 0}
+                        </td>
+
+                        {/* Column 4: Status Badge (Default or Custom) */}
+                        <td className="py-4 px-6">
+                          {cat.is_default ? (
+                            <span className="text-[10px] bg-slate-100 border border-slate-200 text-slate-500 font-bold px-2 py-0.5 rounded-md">
+                              Default
+                            </span>
+                          ) : (
+                            <span className="text-[10px] bg-blue-50 border border-blue-100 text-blue-600 font-bold px-2 py-0.5 rounded-md">
+                              Custom
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Column 5: Edit/Delete Actions */}
+                        <td className="py-4 px-6 text-right">
+                          {cat.is_default ? (
+                            <span className="text-gray-400 text-xs font-semibold cursor-not-allowed select-none" title="Category default tidak dapat diubah">
+                              Terkunci
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleOpenEditModal(cat)}
+                              className="text-blue hover:text-blue-600 text-xs font-extrabold cursor-pointer transition-colors"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {paginatedCategories.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="py-12 text-center text-gray-400 font-semibold text-sm">
+                        Tidak ada category ditemukan.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4 bg-gray-50/20 text-xs">
+                <span className="text-gray-400 font-bold">
+                  Showing {Math.min((safeCurrentPage - 1) * itemsPerPage + 1, categories.length)} to{" "}
+                  {Math.min(safeCurrentPage * itemsPerPage, categories.length)} of {categories.length} entries
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={safeCurrentPage === 1}
+                    className="px-3 py-1.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-black font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    Previous
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-xl font-bold transition-all cursor-pointer flex items-center justify-center border ${
+                        safeCurrentPage === page
+                          ? "bg-[#1A6B3C] border-[#1A6B3C] text-white"
+                          : "border-gray-200 hover:bg-gray-50 text-black"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={safeCurrentPage === totalPages}
+                    className="px-3 py-1.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-black font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -266,27 +401,27 @@ export const Categories = () => {
           <p>• Untuk mengatur budget per category, buka halaman Budget</p>
         </div>
 
-      {/* Category Modal */}
-      <CategoryModal
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
-        onSubmit={handleModalSubmit}
-        onDelete={handleDeleteClick}
-        category={selectedCategory}
-        defaultType={activeTab}
-        existingCategories={categories}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      {selectedCategory && (
-        <DeleteCategoryDialog
+        {/* Category Modal */}
+        <CategoryModal
+          isOpen={isModalOpen}
+          onClose={handleModalClose}
+          onSubmit={handleModalSubmit}
+          onDelete={handleDeleteClick}
           category={selectedCategory}
-          isOpen={isDeleteOpen}
-          onClose={() => setIsDeleteOpen(false)}
-          onConfirm={handleDeleteConfirm}
-          isDeleting={isDeleting}
+          defaultType={activeTab}
+          existingCategories={categories}
         />
-      )}
+
+        {/* Delete Confirmation Dialog */}
+        {selectedCategory && (
+          <DeleteCategoryDialog
+            category={selectedCategory}
+            isOpen={isDeleteOpen}
+            onClose={() => setIsDeleteOpen(false)}
+            onConfirm={handleDeleteConfirm}
+            isDeleting={isDeleting}
+          />
+        )}
       </div>
     </MainLayout>
   );
