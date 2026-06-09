@@ -3,7 +3,7 @@ export interface Budget {
   user_id: string;
   category_id: string;
   amount: number; // limit nominal
-  period: "monthly";
+  period: "daily" | "monthly" | "yearly";
   month: number; // 1-12
   year: number;
   alert_at: number; // threshold persen, default 80

@@ -2,15 +2,17 @@ import { useState, useEffect } from "react";
 import { iconMap } from "../categories/iconHelper";
 import { IoCloseOutline } from "react-icons/io5";
 import type { Budget } from "../../types/budget";
+import { resolveCategoryColor } from "../categories/colorHelper";
 
 interface BudgetModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: { amount: number; alertAt: number; isRecurring: boolean }) => void;
+  onSubmit: (data: { amount: number; alertAt: number; isRecurring: boolean; period?: "daily" | "monthly" | "yearly" }) => void;
   onDelete?: () => void;
   budget?: Budget | null;
   category: { id: string; name: string; icon: string; color: string } | null;
   monthYearLabel: string;
+  activePeriod?: "daily" | "monthly" | "yearly";
 }
 
 export const BudgetModal = ({
@@ -21,6 +23,7 @@ export const BudgetModal = ({
   budget,
   category,
   monthYearLabel,
+  activePeriod = "monthly",
 }: BudgetModalProps) => {
   const [amountInput, setAmountInput] = useState("");
   const [alertAt, setAlertAt] = useState(80);
@@ -30,6 +33,7 @@ export const BudgetModal = ({
 
   const isEditMode = !!budget;
   const targetCategory = budget ? budget.category : category;
+  const currentPeriod = budget?.period || activePeriod;
 
   useEffect(() => {
     if (isOpen) {
@@ -50,6 +54,7 @@ export const BudgetModal = ({
   if (!isOpen || !targetCategory) return null;
 
   const IconComponent = iconMap[targetCategory.icon] || iconMap["Gift"];
+  const resolvedColor = resolveCategoryColor(targetCategory.color);
 
   const formatNumberString = (val: string) => {
     const clean = val.replace(/\D/g, "");
@@ -75,8 +80,28 @@ export const BudgetModal = ({
       amount: parsedAmount,
       alertAt,
       isRecurring,
+      period: currentPeriod,
     });
   };
+
+  // Dynamic Labels based on Period
+  const limitLabel = currentPeriod === "daily"
+    ? "Limit per hari"
+    : currentPeriod === "yearly"
+      ? "Limit per tahun"
+      : "Limit per bulan";
+
+  const recurringLabel = currentPeriod === "daily"
+    ? "Ulangi limit ini setiap hari"
+    : currentPeriod === "yearly"
+      ? "Ulangi limit ini setiap tahun"
+      : "Ulangi limit ini setiap bulan";
+
+  const recurringDesc = currentPeriod === "daily"
+    ? "Kamu tetap bisa mengubah limit di hari berikutnya"
+    : currentPeriod === "yearly"
+      ? "Kamu tetap bisa mengubah limit di tahun berikutnya"
+      : "Kamu tetap bisa mengubah limit di bulan berikutnya";
 
   if (isConfirmDeleteOpen && onDelete) {
     return (
@@ -122,8 +147,8 @@ export const BudgetModal = ({
             <div
               className="w-10 h-10 rounded-[10px] flex items-center justify-center flex-shrink-0"
               style={{
-                backgroundColor: `${targetCategory.color}15`,
-                color: targetCategory.color,
+                backgroundColor: `${resolvedColor}15`,
+                color: resolvedColor,
               }}
             >
               <IconComponent className="w-5 h-5" />
@@ -157,7 +182,7 @@ export const BudgetModal = ({
 
           {/* Limit Amount */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-gray-500">Limit per bulan</label>
+            <label className="text-xs font-bold text-gray-500">{limitLabel}</label>
             <div className="relative flex items-center">
               <span className="absolute left-4 text-sm font-bold text-gray-400 select-none">Rp</span>
               <input
@@ -166,7 +191,7 @@ export const BudgetModal = ({
                 placeholder="1.500.000"
                 value={amountInput}
                 onChange={handleAmountChange}
-                className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#1A6B3C] bg-white font-extrabold text-sm text-black"
+                className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-blue focus:ring-2 focus:ring-blue/10 bg-white font-extrabold text-sm text-black transition-all"
               />
             </div>
           </div>
@@ -184,7 +209,7 @@ export const BudgetModal = ({
               step="5"
               value={alertAt}
               onChange={(e) => setAlertAt(Number(e.target.value))}
-              className="w-full h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-[#1A6B3C]"
+              className="w-full h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-blue"
             />
             <p className="text-[10px] text-gray-400 font-medium">
               Peringatan muncul saat pengeluaran mencapai {alertAt}% dari limit
@@ -198,12 +223,12 @@ export const BudgetModal = ({
               type="checkbox"
               checked={isRecurring}
               onChange={(e) => setIsRecurring(e.target.checked)}
-              className="mt-1 w-4 h-4 rounded border-gray-300 text-[#1A6B3C] focus:ring-[#1A6B3C] accent-[#1A6B3C]"
+              className="mt-1 w-4 h-4 rounded border-gray-300 text-blue focus:ring-blue accent-blue"
             />
             <label htmlFor="recurring-checkbox" className="flex flex-col cursor-pointer select-none">
-              <span className="text-xs font-bold text-black">Ulangi limit ini setiap bulan</span>
+              <span className="text-xs font-bold text-black">{recurringLabel}</span>
               <span className="text-[10px] text-gray-400 font-medium mt-0.5">
-                Kamu tetap bisa mengubah limit di bulan berikutnya
+                {recurringDesc}
               </span>
             </label>
           </div>
@@ -230,7 +255,7 @@ export const BudgetModal = ({
               </button>
               <button
                 type="submit"
-                className="py-2.5 px-6 bg-[#1A6B3C] hover:bg-[#1A6B3C]/95 text-white rounded-xl font-bold text-xs transition-all cursor-pointer shadow-md shadow-[#1A6B3C]/10"
+                className="btn-primary px-6"
               >
                 Simpan limit
               </button>
@@ -241,4 +266,5 @@ export const BudgetModal = ({
     </div>
   );
 };
+
 export default BudgetModal;

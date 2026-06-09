@@ -4,12 +4,14 @@ interface BudgetSummaryCardProps {
   totalSpent: number;
   totalLimit: number;
   onSetFirstBudget?: () => void;
+  period?: "daily" | "monthly" | "yearly";
 }
 
 export const BudgetSummaryCard = ({
   totalSpent,
   totalLimit,
   onSetFirstBudget,
+  period = "monthly",
 }: BudgetSummaryCardProps) => {
   const hasBudgets = totalLimit > 0;
   const remaining = totalLimit - totalSpent;
@@ -24,7 +26,7 @@ export const BudgetSummaryCard = ({
   const getProgressBg = (percent: number) => {
     if (percent >= 100) return "bg-red-600";
     if (percent >= 80) return "bg-amber-500";
-    return "bg-[#1A6B3C]";
+    return "bg-blue";
   };
 
   const getSpentTextColor = (percent: number) => {
@@ -33,16 +35,22 @@ export const BudgetSummaryCard = ({
     return "text-green-600";
   };
 
+  const getPeriodText = () => {
+    if (period === "daily") return "hari ini";
+    if (period === "yearly") return "tahun ini";
+    return "bulan ini";
+  };
+
   if (!hasBudgets) {
     return (
       <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col items-center justify-center text-center gap-3 min-h-[160px]">
         <p className="text-gray-400 text-sm font-semibold">
-          Belum ada budget. Set limit untuk mulai memantau pengeluaran.
+          Belum ada budget. Set limit untuk mulai memantau pengeluaran {getPeriodText()}.
         </p>
         {onSetFirstBudget && (
           <button
             onClick={onSetFirstBudget}
-            className="mt-1 py-2 px-4 bg-[#1A6B3C] hover:bg-[#1A6B3C]/95 text-white rounded-xl font-bold text-xs transition-all cursor-pointer shadow-md shadow-[#1A6B3C]/10"
+            className="btn-primary mt-1"
           >
             + Set budget pertama
           </button>
@@ -55,7 +63,7 @@ export const BudgetSummaryCard = ({
     <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col gap-5 transition-all hover:shadow-sm">
       {/* Top row */}
       <div className="flex justify-between items-center">
-        <h3 className="text-black font-extrabold text-base">Ringkasan bulan ini</h3>
+        <h3 className="text-black font-extrabold text-base">Ringkasan {getPeriodText()}</h3>
         <span
           className={`text-xs font-extrabold border rounded-full px-3 py-1 ${getStatusColor(
             percentage
@@ -79,7 +87,7 @@ export const BudgetSummaryCard = ({
           <span className="text-gray-500">
             {formatRupiah(totalSpent)} dari {formatRupiah(totalLimit)}
           </span>
-          <span className={remaining >= 0 ? "text-[#1A6B3C]" : "text-red-600"}>
+          <span className={remaining >= 0 ? "text-blue" : "text-red-600"}>
             {remaining >= 0 ? `Sisa ${formatRupiah(remaining)}` : `Over ${formatRupiah(Math.abs(remaining))}`}
           </span>
         </div>
@@ -102,7 +110,7 @@ export const BudgetSummaryCard = ({
         </div>
         <div>
           <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Sisa Budget</p>
-          <p className={`font-extrabold text-base mt-1 ${remaining >= 0 ? "text-[#1A6B3C]" : "text-red-600"}`}>
+          <p className={`font-extrabold text-base mt-1 ${remaining >= 0 ? "text-blue" : "text-red-600"}`}>
             {formatRupiahCompact(remaining)}
           </p>
         </div>
@@ -110,3 +118,4 @@ export const BudgetSummaryCard = ({
     </div>
   );
 };
+export default BudgetSummaryCard;

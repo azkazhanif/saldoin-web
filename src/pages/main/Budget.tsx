@@ -11,11 +11,13 @@ import { IoChevronBackOutline, IoChevronForwardOutline, IoWalletOutline } from "
 export const BudgetPage = () => {
   const {
     currentDate,
+    activePeriod,
+    setActivePeriod,
     budgets,
     unbudgetedCategories,
     loading,
-    prevMonth,
-    nextMonth,
+    prevPeriod,
+    nextPeriod,
     isNextDisabled,
     createBudget,
     updateBudget,
@@ -62,31 +64,64 @@ export const BudgetPage = () => {
     amount: number;
     alertAt: number;
     isRecurring: boolean;
+    period?: "daily" | "monthly" | "yearly";
   }) => {
+    let res;
     if (selectedBudget) {
       // Edit mode
-      await updateBudget(selectedBudget.id, formData.amount, formData.alertAt, formData.isRecurring);
+      res = await updateBudget(selectedBudget.id, formData.amount, formData.alertAt, formData.isRecurring);
     } else if (selectedCategory) {
       // Add mode
-      await createBudget(selectedCategory.id, formData.amount, formData.alertAt, formData.isRecurring);
+      res = await createBudget(selectedCategory.id, formData.amount, formData.alertAt, formData.isRecurring, formData.period);
     }
-    handleModalClose();
+    
+    if (res && res.error) {
+      alert(`Gagal menyimpan budget: ${res.error.message || res.error}`);
+    } else {
+      handleModalClose();
+    }
   };
 
   const handleDeleteBudget = async () => {
     if (selectedBudget) {
-      await deleteBudget(selectedBudget.id);
+      const res = await deleteBudget(selectedBudget.id);
+      if (res && res.error) {
+        alert(`Gagal menghapus budget: ${res.error.message || res.error}`);
+      } else {
+        handleModalClose();
+      }
     }
-    handleModalClose();
   };
 
-  // Month-Year Label (e.g. "Juni 2026")
-  const getMonthLabel = () => {
-    const d = new Date(currentDate.year, currentDate.month - 1);
-    return new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric" }).format(d);
+  // Date/Period Label formatting
+  const getPeriodLabel = () => {
+    const { day, month, year } = currentDate;
+    if (activePeriod === "daily") {
+      const d = new Date(year, month - 1, day);
+      return new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric" }).format(d);
+    } else if (activePeriod === "monthly") {
+      const d = new Date(year, month - 1);
+      return new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric" }).format(d);
+    } else {
+      return String(year);
+    }
   };
 
-  const monthYearLabel = getMonthLabel();
+  const periodLabel = getPeriodLabel();
+
+  // Sub-heading helper
+  const getSubheading = () => {
+    if (activePeriod === "daily") return "Pantau batas pengeluaran harian kamu";
+    if (activePeriod === "yearly") return "Pantau batas pengeluaran tahunan kamu";
+    return "Pantau batas pengeluaran bulanan kamu";
+  };
+
+  // Empty state title helper
+  const getEmptyTitle = () => {
+    if (activePeriod === "daily") return `Belum ada budget harian untuk ${periodLabel}`;
+    if (activePeriod === "yearly") return `Belum ada budget tahunan untuk ${periodLabel}`;
+    return `Belum ada budget bulanan untuk ${periodLabel}`;
+  };
 
   // Aggregates
   const totalLimit = budgets.reduce((sum, b) => sum + b.amount, 0);
@@ -116,49 +151,85 @@ export const BudgetPage = () => {
     <MainLayout>
       <div className="flex flex-col gap-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <h2 className="text-black font-extrabold text-2xl">Budget</h2>
-            <p className="text-gray-400 text-sm mt-0.5">Pantau batas pengeluaran bulan ini</p>
+            <p className="text-gray-400 text-sm mt-0.5">{getSubheading()}</p>
           </div>
 
-          {/* Month Switcher Navigation */}
-          <div className="flex items-center gap-3 bg-white border border-gray-100 px-3 py-1.5 rounded-xl shadow-xs self-start sm:self-auto">
-            <button
-              onClick={prevMonth}
-              className="p-1 rounded-lg hover:bg-gray-50 text-gray-500 hover:text-black transition-colors cursor-pointer"
-            >
-              <IoChevronBackOutline className="w-5 h-5" />
-            </button>
-            <span className="text-sm font-extrabold text-black min-w-[100px] text-center select-none">
-              {monthYearLabel}
-            </span>
-            <button
-              onClick={nextMonth}
-              disabled={isNextDisabled}
-              className={`p-1 rounded-lg hover:bg-gray-50 text-gray-500 hover:text-black transition-colors cursor-pointer ${
-                isNextDisabled ? "opacity-35 cursor-not-allowed hover:bg-transparent" : ""
-              }`}
-            >
-              <IoChevronForwardOutline className="w-5 h-5" />
-            </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 self-start lg:self-auto w-full lg:w-auto">
+            {/* Period Switcher Tabs */}
+            <div className="flex bg-gray-50 border border-gray-200/50 p-1 rounded-xl justify-between sm:justify-start">
+              <button
+                onClick={() => setActivePeriod("daily")}
+                className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${
+                  activePeriod === "daily"
+                    ? "bg-white text-black shadow-xs"
+                    : "text-gray-400 hover:text-black"
+                }`}
+              >
+                Harian
+              </button>
+              <button
+                onClick={() => setActivePeriod("monthly")}
+                className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${
+                  activePeriod === "monthly"
+                    ? "bg-white text-black shadow-xs"
+                    : "text-gray-400 hover:text-black"
+                }`}
+              >
+                Bulanan
+              </button>
+              <button
+                onClick={() => setActivePeriod("yearly")}
+                className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${
+                  activePeriod === "yearly"
+                    ? "bg-white text-black shadow-xs"
+                    : "text-gray-400 hover:text-black"
+                }`}
+              >
+                Tahunan
+              </button>
+            </div>
+
+            {/* Date Switcher Navigation */}
+            <div className="flex items-center gap-3 bg-white border border-gray-100 px-3 py-1.5 rounded-xl shadow-xs w-full sm:w-auto justify-between sm:justify-start">
+              <button
+                onClick={prevPeriod}
+                className="p-1 rounded-lg hover:bg-gray-50 text-gray-500 hover:text-black transition-colors cursor-pointer"
+              >
+                <IoChevronBackOutline className="w-5 h-5" />
+              </button>
+              <span className="text-sm font-extrabold text-black min-w-[120px] text-center select-none">
+                {periodLabel}
+              </span>
+              <button
+                onClick={nextPeriod}
+                disabled={isNextDisabled}
+                className={`p-1 rounded-lg hover:bg-gray-50 text-gray-500 hover:text-black transition-colors cursor-pointer ${
+                  isNextDisabled ? "opacity-35 cursor-not-allowed hover:bg-transparent" : ""
+                }`}
+              >
+                <IoChevronForwardOutline className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Loading State */}
         {loading ? (
           <div className="flex flex-col items-center justify-center min-h-[300px]">
-            <div className="w-8 h-8 border-4 border-[#1A6B3C] border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-4 border-blue border-t-transparent rounded-full animate-spin"></div>
             <p className="text-gray-400 text-xs font-semibold mt-3 animate-pulse">Memuat budget...</p>
           </div>
         ) : budgets.length === 0 ? (
           /* Empty State: No Budget limit set at all */
           <div className="flex flex-col items-center justify-center text-center p-8 bg-white border border-gray-100 rounded-3xl gap-4 min-h-[300px] shadow-xs">
-            <div className="w-16 h-16 rounded-2xl bg-green-50 text-[#1A6B3C] flex items-center justify-center shadow-xs">
+            <div className="w-16 h-16 rounded-2xl bg-blue/10 text-blue flex items-center justify-center shadow-xs">
               <IoWalletOutline className="w-8 h-8" />
             </div>
             <div>
-              <h3 className="text-black font-extrabold text-lg">Belum ada budget untuk {monthYearLabel}</h3>
+              <h3 className="text-black font-extrabold text-lg">{getEmptyTitle()}</h3>
               <p className="text-gray-400 text-xs font-semibold mt-1 max-w-sm leading-relaxed">
                 Set limit pengeluaran per category untuk mulai memantau. Kamu akan mendapat peringatan sebelum
                 budget habis.
@@ -167,7 +238,7 @@ export const BudgetPage = () => {
             {unbudgetedCategories.length > 0 && (
               <button
                 onClick={() => handleOpenSet(unbudgetedCategories[0])}
-                className="py-2.5 px-5 bg-[#1A6B3C] hover:bg-[#1A6B3C]/95 text-white rounded-xl font-bold text-xs transition-all cursor-pointer shadow-md shadow-[#1A6B3C]/10"
+                className="btn-primary px-5"
               >
                 + Set budget pertama
               </button>
@@ -180,6 +251,7 @@ export const BudgetPage = () => {
             <BudgetSummaryCard
               totalSpent={totalSpent}
               totalLimit={totalLimit}
+              period={activePeriod}
               onSetFirstBudget={
                 unbudgetedCategories.length > 0 ? () => handleOpenSet(unbudgetedCategories[0]) : undefined
               }
@@ -219,7 +291,7 @@ export const BudgetPage = () => {
               <hr className="flex-1 border-gray-100" />
               <button
                 onClick={toggleUnbudgeted}
-                className="text-xs font-bold text-[#1A6B3C] hover:underline cursor-pointer"
+                className="text-xs font-bold text-blue hover:underline cursor-pointer"
               >
                 {isUnbudgetedCollapsed ? "Tampilkan" : "Sembunyikan"}
               </button>
@@ -244,7 +316,8 @@ export const BudgetPage = () => {
         onDelete={handleDeleteBudget}
         budget={selectedBudget}
         category={selectedCategory}
-        monthYearLabel={monthYearLabel}
+        monthYearLabel={periodLabel}
+        activePeriod={activePeriod}
       />
     </MainLayout>
   );

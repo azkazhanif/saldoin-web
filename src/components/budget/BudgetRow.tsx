@@ -1,6 +1,7 @@
 import type { Budget } from "../../types/budget";
 import { formatRupiah } from "../../lib/formatters";
 import { iconMap } from "../categories/iconHelper";
+import { resolveCategoryColor } from "../categories/colorHelper";
 
 interface BudgetRowProps {
   budget: Budget;
@@ -13,12 +14,13 @@ export const BudgetRow = ({ budget, onClick }: BudgetRowProps) => {
   const percentage = budget.percentage || 0;
 
   const IconComponent = iconMap[budget.category.icon] || iconMap["Gift"];
+  const resolvedColor = resolveCategoryColor(budget.category.color);
 
   const isOver = percentage >= 100;
   const isWarning = percentage >= (budget.alert_at || 80) && percentage < 100;
 
-  let progressBg = "bg-[#1A6B3C]";
-  let textStatusColor = "text-[#1A6B3C]";
+  let progressBg = "";
+  let textStatusColor = "";
   let borderClass = "border-gray-100 hover:border-gray-200";
 
   if (isOver) {
@@ -29,6 +31,8 @@ export const BudgetRow = ({ budget, onClick }: BudgetRowProps) => {
     progressBg = "bg-amber-500";
     textStatusColor = "text-amber-600";
     borderClass = "border-gray-100 hover:border-amber-200";
+  } else {
+    textStatusColor = "text-black";
   }
 
   return (
@@ -41,8 +45,8 @@ export const BudgetRow = ({ budget, onClick }: BudgetRowProps) => {
           <div
             className="w-10 h-10 rounded-[10px] flex items-center justify-center flex-shrink-0"
             style={{
-              backgroundColor: `${budget.category.color}15`,
-              color: budget.category.color,
+              backgroundColor: `${resolvedColor}15`,
+              color: resolvedColor,
             }}
           >
             <IconComponent className="w-5 h-5" />
@@ -83,16 +87,25 @@ export const BudgetRow = ({ budget, onClick }: BudgetRowProps) => {
               formatRupiah(limit)
             )}
           </p>
-          <span className={`text-xs font-bold ${textStatusColor}`}>{percentage}%</span>
+          <span 
+            className={`text-xs font-bold ${textStatusColor}`}
+            style={{ color: (!isOver && !isWarning) ? resolvedColor : undefined }}
+          >
+            {percentage}%
+          </span>
         </div>
       </div>
 
       <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-500 ${progressBg}`}
-          style={{ width: `${Math.min(percentage, 100)}%` }}
+          style={{ 
+            width: `${Math.min(percentage, 100)}%`,
+            backgroundColor: (!isOver && !isWarning) ? resolvedColor : undefined
+          }}
         />
       </div>
     </div>
   );
 };
+export default BudgetRow;

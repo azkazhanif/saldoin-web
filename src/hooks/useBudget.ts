@@ -5,9 +5,11 @@ import type { Budget } from "../types/budget";
 
 export const useBudget = () => {
   const { user } = useAuth();
+  const [activePeriod, setActivePeriod] = useState<"daily" | "monthly" | "yearly" >("monthly");
+  
   const [currentDate, setCurrentDate] = useState(() => {
     const now = new Date();
-    return { month: now.getMonth() + 1, year: now.getFullYear() };
+    return { day: now.getDate(), month: now.getMonth() + 1, year: now.getFullYear() };
   });
 
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -18,9 +20,26 @@ export const useBudget = () => {
     if (!user) return;
     setLoading(true);
     try {
-      const { month, year } = currentDate;
+      const { day, month, year } = currentDate;
 
-      // 1. Fetch budgets for the month & year (with category details joined)
+      // 1. Determine active date range for outcome transactions
+      let startDate = "";
+      let endDate = "";
+
+      if (activePeriod === "daily") {
+        const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        startDate = dateStr;
+        endDate = dateStr;
+      } else if (activePeriod === "monthly") {
+        startDate = `${year}-${String(month).padStart(2, "0")}-01`;
+        const lastDay = new Date(year, month, 0).getDate();
+        endDate = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+      } else if (activePeriod === "yearly") {
+        startDate = `${year}-01-01`;
+        endDate = `${year}-12-31`;
+      }
+
+      // 2. Fetch budgets for the current year (so we can filter in-memory dynamically)
       const { data: budgetsData, error: budgetError } = await supabase
         .from("budgets")
         .select(`
@@ -28,27 +47,22 @@ export const useBudget = () => {
           category:categories(id, name, icon, color)
         `)
         .eq("user_id", user.id)
-        .eq("month", month)
         .eq("year", year);
 
       if (budgetError) throw budgetError;
 
-      // 2. Fetch transactions for active month (where type = 'outcome')
-      const startOfMonth = `${year}-${String(month).padStart(2, "0")}-01`;
-      const lastDay = new Date(year, month, 0).getDate();
-      const endOfMonth = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-
+      // 3. Fetch transactions for active date range where type = 'outcome'
       const { data: spendingData, error: txError } = await supabase
         .from("transactions")
         .select("category_id, amount")
         .eq("user_id", user.id)
         .eq("type", "outcome") // Map to 'outcome' in database
-        .gte("date", startOfMonth)
-        .lte("date", endOfMonth);
+        .gte("date", startDate)
+        .lte("date", endDate);
 
       if (txError) throw txError;
 
-      // 3. Fetch all expense categories ('outcome') to find unbudgeted ones
+      // 4. Fetch all expense categories ('outcome') to find unbudgeted ones
       const { data: categoriesData, error: catError } = await supabase
         .from("categories")
         .select("*")
@@ -63,8 +77,19 @@ export const useBudget = () => {
         return acc;
       }, {} as Record<string, number>);
 
+      // Filter budgets based on active period
+      const filteredBudgetsData = (budgetsData || []).filter((b: any) => {
+        if (activePeriod === "daily") {
+          return b.period === "daily" && b.month === month;
+        } else if (activePeriod === "monthly") {
+          return b.period === "monthly" && b.month === month;
+        } else {
+          return b.period === "yearly";
+        }
+      });
+
       // Merge budgets with dynamic progress spent
-      const mergedBudgets: Budget[] = (budgetsData || []).map((b: any) => {
+      const mergedBudgets: Budget[] = filteredBudgetsData.map((b: any) => {
         const spent = spendingMap[b.category_id] || 0;
         const amount = Number(b.amount);
         const percentage = amount > 0 ? Math.round((spent / amount) * 100) : 0;
@@ -113,58 +138,107 @@ export const useBudget = () => {
 
   useEffect(() => {
     loadData();
-  }, [user, currentDate.month, currentDate.year]);
+  }, [user, activePeriod, currentDate.day, currentDate.month, currentDate.year]);
 
-  const handlePrevMonth = () => {
+  const handlePrevPeriod = () => {
     setCurrentDate((prev) => {
-      let newMonth = prev.month - 1;
-      let newYear = prev.year;
-      if (newMonth === 0) {
-        newMonth = 12;
-        newYear -= 1;
+      if (activePeriod === "daily") {
+        const d = new Date(prev.year, prev.month - 1, prev.day - 1);
+        return { day: d.getDate(), month: d.getMonth() + 1, year: d.getFullYear() };
+      } else if (activePeriod === "monthly") {
+        let newMonth = prev.month - 1;
+        let newYear = prev.year;
+        if (newMonth === 0) {
+          newMonth = 12;
+          newYear -= 1;
+        }
+        return { ...prev, month: newMonth, year: newYear };
+      } else {
+        return { ...prev, year: prev.year - 1 };
       }
-      return { month: newMonth, year: newYear };
     });
   };
 
-  const handleNextMonth = () => {
+  const handleNextPeriod = () => {
     setCurrentDate((prev) => {
       const now = new Date();
-      const currentLimit = { month: now.getMonth() + 1, year: now.getFullYear() };
+      const currentLimit = { day: now.getDate(), month: now.getMonth() + 1, year: now.getFullYear() };
 
-      if (prev.year > currentLimit.year || (prev.year === currentLimit.year && prev.month >= currentLimit.month)) {
-        return prev; // Disable navigating to the future
+      if (activePeriod === "daily") {
+        if (prev.year > currentLimit.year ||
+            (prev.year === currentLimit.year && prev.month > currentLimit.month) ||
+            (prev.year === currentLimit.year && prev.month === currentLimit.month && prev.day >= currentLimit.day)) {
+          return prev;
+        }
+        const d = new Date(prev.year, prev.month - 1, prev.day + 1);
+        return { day: d.getDate(), month: d.getMonth() + 1, year: d.getFullYear() };
+      } else if (activePeriod === "monthly") {
+        if (prev.year > currentLimit.year || (prev.year === currentLimit.year && prev.month >= currentLimit.month)) {
+          return prev;
+        }
+        let newMonth = prev.month + 1;
+        let newYear = prev.year;
+        if (newMonth === 13) {
+          newMonth = 1;
+          newYear += 1;
+        }
+        return { ...prev, month: newMonth, year: newYear };
+      } else {
+        if (prev.year >= currentLimit.year) {
+          return prev;
+        }
+        return { ...prev, year: prev.year + 1 };
       }
-
-      let newMonth = prev.month + 1;
-      let newYear = prev.year;
-      if (newMonth === 13) {
-        newMonth = 1;
-        newYear += 1;
-      }
-      return { month: newMonth, year: newYear };
     });
   };
 
   const isNextDisabled = () => {
     const now = new Date();
-    return currentDate.year > now.getFullYear() || 
-      (currentDate.year === now.getFullYear() && currentDate.month >= now.getMonth() + 1);
+    if (activePeriod === "daily") {
+      return currentDate.year > now.getFullYear() ||
+        (currentDate.year === now.getFullYear() && currentDate.month > now.getMonth() + 1) ||
+        (currentDate.year === now.getFullYear() && currentDate.month === now.getMonth() + 1 && currentDate.day >= now.getDate());
+    } else if (activePeriod === "monthly") {
+      return currentDate.year > now.getFullYear() ||
+        (currentDate.year === now.getFullYear() && currentDate.month >= now.getMonth() + 1);
+    } else {
+      return currentDate.year >= now.getFullYear();
+    }
   };
 
-  const createBudget = async (categoryId: string, amount: number, alertAt: number, isRecurring: boolean) => {
+  const createBudget = async (
+    categoryId: string, 
+    amount: number, 
+    alertAt: number, 
+    isRecurring: boolean, 
+    period?: "daily" | "monthly" | "yearly"
+  ) => {
     if (!user) return { error: new Error("User not authenticated") };
     try {
-      const { error } = await supabase.from("budgets").insert({
+      const targetPeriod = period || activePeriod;
+      // Yearly budgets are mapped to month = 1 to satisfy DB unique key (user_id, category_id, month, year)
+      const targetMonth = targetPeriod === "yearly" ? 1 : currentDate.month;
+
+      const payload: any = {
         user_id: user.id,
         category_id: categoryId,
         amount,
-        period: "monthly",
-        month: currentDate.month,
+        period: targetPeriod,
+        month: targetMonth,
         year: currentDate.year,
         alert_at: alertAt,
         is_recurring: isRecurring,
-      });
+      };
+
+      let { error } = await supabase.from("budgets").insert(payload);
+
+      // 42703 = column does not exist
+      if (error && error.code === "42703") {
+        delete payload.alert_at;
+        delete payload.is_recurring;
+        const retryResult = await supabase.from("budgets").insert(payload);
+        error = retryResult.error;
+      }
 
       if (error) throw error;
       await loadData();
@@ -178,16 +252,29 @@ export const useBudget = () => {
   const updateBudget = async (budgetId: string, amount: number, alertAt: number, isRecurring: boolean) => {
     if (!user) return { error: new Error("User not authenticated") };
     try {
-      const { error } = await supabase
+      const payload: any = {
+        amount,
+        alert_at: alertAt,
+        is_recurring: isRecurring,
+      };
+
+      let { error } = await supabase
         .from("budgets")
-        .update({
-          amount,
-          alert_at: alertAt,
-          is_recurring: isRecurring,
-          updated_at: new Date().toISOString(),
-        })
+        .update(payload)
         .eq("id", budgetId)
         .eq("user_id", user.id);
+
+      // 42703 = column does not exist
+      if (error && error.code === "42703") {
+        delete payload.alert_at;
+        delete payload.is_recurring;
+        const retryResult = await supabase
+          .from("budgets")
+          .update(payload)
+          .eq("id", budgetId)
+          .eq("user_id", user.id);
+        error = retryResult.error;
+      }
 
       if (error) throw error;
       await loadData();
@@ -218,11 +305,13 @@ export const useBudget = () => {
 
   return {
     currentDate,
+    activePeriod,
+    setActivePeriod,
     budgets,
     unbudgetedCategories,
     loading,
-    prevMonth: handlePrevMonth,
-    nextMonth: handleNextMonth,
+    prevPeriod: handlePrevPeriod,
+    nextPeriod: handleNextPeriod,
     isNextDisabled: isNextDisabled(),
     createBudget,
     updateBudget,

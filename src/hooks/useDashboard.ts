@@ -121,7 +121,6 @@ export const useDashboard = () => {
       const { data: budgetsData, error: budgetError } = await supabase
         .from("budgets")
         .select("*, category:categories(*)")
-        .eq("month", currentMonth)
         .eq("year", currentYear);
 
       if (budgetError) throw budgetError;
@@ -313,13 +312,32 @@ export const useDashboard = () => {
   });
 
   // Calculate budget warnings (spent >= 80% of budget)
-  const budgetWarnings: BudgetWarningItem[] = budgets.map((b) => {
-    const categoryTransactions = transactions.filter(
-      (t) => t.type === "outcome" &&
-             t.category === b.category?.name &&
-             t.date.includes(`-${String(currentMonth).padStart(2, '0')}-`) &&
-             !t.category.toLowerCase().includes("transfer")
-    );
+  const activeBudgets = budgets.filter((b) => {
+    if (b.period === "yearly") {
+      return b.year === currentYear;
+    }
+    return b.month === currentMonth && b.year === currentYear;
+  });
+
+  const budgetWarnings: BudgetWarningItem[] = activeBudgets.map((b) => {
+    const categoryTransactions = transactions.filter((t) => {
+      if (t.type !== "outcome" || t.category !== b.category?.name || t.category.toLowerCase().includes("transfer")) {
+        return false;
+      }
+      
+      if (b.period === "daily") {
+        // Daily: match today's date
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+        return t.date === todayStr;
+      } else if (b.period === "yearly") {
+        // Yearly: match this year
+        return t.date.startsWith(`${currentYear}-`);
+      } else {
+        // Monthly: match this month
+        return t.date.includes(`-${String(currentMonth).padStart(2, '0')}-`);
+      }
+    });
+
     const spent = categoryTransactions.reduce((sum, t) => sum + t.amount, 0);
     const limit = Number(b.amount);
     const percentage = limit > 0 ? (spent / limit) * 100 : 0;
