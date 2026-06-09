@@ -4,6 +4,7 @@ import "./index.css";
 import App from "./App.tsx";
 import { createBrowserRouter, RouterProvider } from "react-router";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
+import { ThemeProvider } from "./contexts/ThemeContext.tsx";
 import ProtectedRoute from "./components/atoms/auth/ProtectedRoute.tsx";
 import AuthRoute from "./components/atoms/auth/AuthRoute.tsx";
 import Login from "./pages/auth/Login.tsx";
@@ -112,7 +113,9 @@ const router = createBrowserRouter([
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
-      <RouterProvider router={router} />
+      <ThemeProvider>
+        <RouterProvider router={router} />
+      </ThemeProvider>
     </AuthProvider>
   </StrictMode>,
 );
