@@ -5,7 +5,7 @@ import MainLayout from "../../layouts/MainLayout";
 import { CategoryModal } from "../../components/categories/CategoryModal";
 import { DeleteCategoryDialog } from "../../components/categories/DeleteCategoryDialog";
 import type { Category, CategoryType } from "../../types/category";
-import { IoAddOutline, IoInformationCircleOutline } from "react-icons/io5";
+import { IoAddOutline } from "react-icons/io5";
 import { iconMap } from "../../components/categories/iconHelper";
 
 export const Categories = () => {
@@ -39,7 +39,7 @@ export const Categories = () => {
         .or(`user_id.is.null,user_id.eq.${user.id}`)
         .eq("type", dbType)
         .order("is_default", { ascending: false })
-        .order("sort_order");
+        .order("name", { ascending: true });
 
       if (error) throw error;
 
@@ -208,22 +208,10 @@ export const Categories = () => {
           </div>
           <button
             onClick={handleOpenAddModal}
-            className="py-2.5 px-4 bg-[#1A6B3C] hover:bg-[#1A6B3C]/95 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#1A6B3C]/10 self-start sm:self-auto"
+            className="btn-primary self-start sm:self-auto"
           >
             <IoAddOutline className="w-4.5 h-4.5" /> Tambah category
           </button>
-        </div>
-
-        {/* Info Callout */}
-        <div className="bg-blue-50/50 border border-blue-100/50 rounded-2xl p-4 flex items-start gap-3 text-blue-800">
-          <IoInformationCircleOutline className="w-6 h-6 text-blue-500 flex-shrink-0 mt-0.5" />
-          <div className="text-xs font-semibold leading-relaxed">
-            Category adalah label untuk transaksi. Untuk mengatur batas pengeluaran per category, buka{" "}
-            <a href="/budget" className="underline font-bold text-blue-700 hover:text-blue-900">
-              halaman Budget
-            </a>
-            .
-          </div>
         </div>
 
         {/* Tabs */}
@@ -253,7 +241,7 @@ export const Categories = () => {
         {/* Categories List */}
         {loading ? (
           <div className="flex flex-col items-center justify-center min-h-[250px]">
-            <div className="w-8 h-8 border-4 border-[#1A6B3C] border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-4 border-blue border-t-transparent rounded-full animate-spin"></div>
             <p className="text-gray-400 text-xs font-semibold mt-3 animate-pulse">
               Memuat categories...
             </p>
@@ -374,7 +362,7 @@ export const Categories = () => {
                       onClick={() => setCurrentPage(page)}
                       className={`w-8 h-8 rounded-xl font-bold transition-all cursor-pointer flex items-center justify-center border ${
                         safeCurrentPage === page
-                          ? "bg-[#1A6B3C] border-[#1A6B3C] text-white"
+                          ? "bg-blue border-blue text-white"
                           : "border-gray-200 hover:bg-gray-50 text-black"
                       }`}
                     >
@@ -393,13 +381,6 @@ export const Categories = () => {
             )}
           </div>
         )}
-
-        {/* Notes */}
-        <div className="mt-4 space-y-1 text-gray-400 text-[11px] font-medium leading-relaxed">
-          <p>• Category berlabel "Default" tidak bisa dihapus, hanya bisa disembunyikan</p>
-          <p>• Menghapus category custom akan memindahkan transaksinya ke "Lain-lain"</p>
-          <p>• Untuk mengatur budget per category, buka halaman Budget</p>
-        </div>
 
         {/* Category Modal */}
         <CategoryModal

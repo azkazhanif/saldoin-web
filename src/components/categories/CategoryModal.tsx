@@ -148,7 +148,7 @@ export const CategoryModal = ({
               placeholder="cth: Perawatan Hewan"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-black focus:outline-none focus:border-[#1A6B3C] bg-white font-semibold"
+              className="input-primary"
             />
           </div>
 
@@ -217,7 +217,7 @@ export const CategoryModal = ({
                     onClick={() => setSelectedIcon(iconName)}
                     className={`aspect-square rounded-xl flex items-center justify-center transition-all cursor-pointer border ${
                       isSelected
-                        ? "border-[#1A6B3C] bg-gray-50 shadow-xs"
+                        ? "border-blue bg-gray-50 shadow-xs"
                         : "border-gray-100 hover:border-gray-300 bg-white"
                     }`}
                     style={{ color: isSelected ? selectedColor : "#64748b" }}
@@ -231,7 +231,7 @@ export const CategoryModal = ({
               <button
                 type="button"
                 onClick={() => setIsExpanded(true)}
-                className="text-xs text-[#1A6B3C] font-bold mt-1.5 self-start hover:underline cursor-pointer"
+                className="text-xs text-blue font-bold mt-1.5 self-start hover:underline cursor-pointer"
               >
                 Lihat semua
               </button>
@@ -260,7 +260,7 @@ export const CategoryModal = ({
               </button>
               <button
                 type="submit"
-                className="py-2.5 px-6 bg-[#1A6B3C] hover:bg-[#1A6B3C]/95 text-white rounded-xl font-bold text-xs transition-all cursor-pointer shadow-md shadow-[#1A6B3C]/10"
+                className="btn-primary px-6"
               >
                 Simpan
               </button>
