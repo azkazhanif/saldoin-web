@@ -1,7 +1,7 @@
-import { Navigate } from "react-router";
+import LandingPage from "./pages/LandingPage";
 
 function App() {
-  return <Navigate to="/dashboard" replace />;
+  return <LandingPage />;
 }
 
 export default App;
