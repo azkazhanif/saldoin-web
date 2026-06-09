@@ -83,6 +83,8 @@ create table public.budgets (
   period text default 'monthly' not null,
   month integer not null check (month between 1 and 12),
   year integer not null check (year >= 2026),
+  alert_at integer default 80 not null check (alert_at between 50 and 100),
+  is_recurring boolean default true not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   unique (user_id, category_id, month, year)
 );

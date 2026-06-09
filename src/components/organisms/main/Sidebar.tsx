@@ -73,14 +73,14 @@ const Sidebar = () => {
             <NavLink href="/dashboard" icon={GoHome} label="Dashboard" />
             <NavLink href="/wallet" icon={BsWallet} label="Wallet" />
             <NavLink
-              href="/categories"
-              icon={IoSettingsOutline}
-              label="Categories"
-            />
-            <NavLink
               href="/transactions"
               icon={IoListOutline}
               label="Transactions"
+            />
+            <NavLink
+              href="/categories"
+              icon={IoSettingsOutline}
+              label="Categories"
             />
             <NavLink href="/budget" icon={BiMoneyWithdraw} label="Budget" />
           </ul>
