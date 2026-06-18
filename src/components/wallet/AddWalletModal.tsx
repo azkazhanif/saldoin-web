@@ -59,7 +59,7 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
             </label>
             <input
               type="text"
-              placeholder="e.g. BCA Tabungan, Dompet Saku"
+              placeholder="e.g., Holiday Fund"
               value={newWallet.name}
               onChange={(e) =>
                 setNewWallet({ ...newWallet, name: e.target.value })

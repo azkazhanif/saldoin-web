@@ -18,6 +18,11 @@ interface WalletCardProps {
 }
 
 export const WalletCard: React.FC<WalletCardProps> = ({ wallet, onClick }) => {
+  const isNameEmptyOrProvider =
+    !wallet.name ||
+    wallet.name.trim() === "" ||
+    wallet.name.toLowerCase() === wallet.provider.toLowerCase();
+
   return (
     <div
       onClick={onClick}
@@ -46,7 +51,7 @@ export const WalletCard: React.FC<WalletCardProps> = ({ wallet, onClick }) => {
       {/* Bottom Row: Wallet Name & Status */}
       <div className="flex justify-between items-end z-10">
         <span className="text-white/70 font-semibold text-xs leading-none max-w-[70%] truncate">
-          {wallet.name}
+          {isNameEmptyOrProvider ? "" : wallet.name}
         </span>
         <span className="text-white/40 text-[8px] uppercase font-bold tracking-widest leading-none">
           Active

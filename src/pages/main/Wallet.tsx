@@ -4,6 +4,7 @@ import { useWallet } from "../../hooks/useWallet";
 import { WalletCard } from "../../components/wallet/WalletCard";
 import { AddWalletModal } from "../../components/wallet/AddWalletModal";
 import { WalletDetailsModal } from "../../components/wallet/WalletDetailsModal";
+import { formatRupiah } from "../../lib/formatters";
 
 const Wallet = () => {
   const {
@@ -29,6 +30,8 @@ const Wallet = () => {
     handleDeleteWallet,
   } = useWallet();
 
+  const totalCurrentBalance = wallets.reduce((sum, wallet) => sum + wallet.balance, 0);
+
   if (loading) {
     return (
       <MainLayout>
@@ -45,11 +48,19 @@ const Wallet = () => {
   return (
     <MainLayout>
       <div className="flex flex-col gap-6">
-        <div>
-          <h2 className="text-black font-extrabold text-2xl">My Wallet</h2>
-          <p className="text-gray-400 text-sm mt-0.5">
-            Manage your cards and check balances
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
+          <div>
+            <h2 className="text-black font-extrabold text-2xl">My Wallet</h2>
+            <p className="text-gray-400 text-sm mt-0.5">
+              Manage your cards and check balances
+            </p>
+          </div>
+          <div className="flex flex-col sm:items-end">
+            <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Total Balance</span>
+            <span className="text-blue font-extrabold text-2xl sm:text-3xl mt-0.5">
+              {formatRupiah(totalCurrentBalance)}
+            </span>
+          </div>
         </div>
 
         {/* Responsive Grid list of wallets (cols-2 on mobile, cols-3 on desktop) */}

@@ -183,7 +183,6 @@ export const useWallet = () => {
         type: dbType,
         provider: newWallet.provider,
         initial_balance: newWallet.balance,
-        account_number: "", // No longer input by user, saved as empty string
         is_active: true,
         color: newWallet.color,
       });

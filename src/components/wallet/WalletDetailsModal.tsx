@@ -92,7 +92,7 @@ export const WalletDetailsModal: React.FC<WalletDetailsModalProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. BCA Utama"
+                  placeholder="e.g., Holiday Fund"
                   value={editWallet.name}
                   onChange={(e) =>
                     setEditWallet({ ...editWallet, name: e.target.value })
@@ -191,34 +191,39 @@ export const WalletDetailsModal: React.FC<WalletDetailsModalProps> = ({
                 </label>
                 <input
                   type="number"
-                  required
-                  placeholder="e.g. 500000"
+                  disabled
                   value={editWallet.balance}
-                  onChange={(e) =>
-                    setEditWallet({
-                      ...editWallet,
-                      balance: Number(e.target.value),
-                    })
-                  }
-                  className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-black focus:outline-none focus:border-blue bg-white"
+                  className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-400 bg-gray-50 cursor-not-allowed focus:outline-none"
                 />
               </div>
 
               {/* Form Buttons */}
-              <div className="flex gap-3 mt-4">
+              <div className="flex justify-between items-center mt-4">
                 <button
                   type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-black hover:bg-gray-50 text-xs font-bold transition-all cursor-pointer"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setIsConfirmingDelete(true);
+                  }}
+                  className="text-red-500 hover:text-red-600 hover:bg-red-50 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
-                  Cancel
+                  Delete Wallet
                 </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-blue hover:bg-blue-600 text-white text-xs font-bold transition-all cursor-pointer shadow-md shadow-blue/10"
-                >
-                  Save Changes
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className="py-2.5 px-4 rounded-xl border border-gray-200 text-black hover:bg-gray-50 text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="py-2.5 px-4 rounded-xl bg-blue hover:bg-blue-600 text-white text-xs font-bold transition-all cursor-pointer shadow-md shadow-blue/10"
+                  >
+                    Save Changes
+                  </button>
+                </div>
               </div>
             </form>
           </>
