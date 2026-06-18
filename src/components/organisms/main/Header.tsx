@@ -43,14 +43,14 @@ const Header = () => {
   }, []);
 
   return (
-    <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 w-full border-b border-gray-50 pb-4">
-      <h1 className="text-xl md:text-2xl font-extrabold text-black">
+    <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 w-full border-b border-gray-50 pb-4">
+      <h1 className="text-xl lg:text-2xl font-extrabold text-black">
         Hi, {firstName}! Welcome back🙌🏻
       </h1>
       
-      <div className="flex items-center gap-3 w-full md:w-auto">
+      <div className="flex items-center gap-3 w-full lg:w-auto">
         {/* Search input with shortcut helper badge */}
-        <div className="relative flex-1 md:w-64">
+        <div className="relative flex-1 lg:w-64">
           <Input 
             ref={searchInputRef}
             type="text" 
@@ -58,7 +58,7 @@ const Header = () => {
             id="search" 
             name="search" 
           />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-0.5 text-[10px] font-bold text-gray-400 bg-gray-50 border border-gray-200/50 px-1.5 py-0.5 rounded-md select-none pointer-events-none">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden lg:flex items-center gap-0.5 text-[10px] font-bold text-gray-400 bg-gray-50 border border-gray-200/50 px-1.5 py-0.5 rounded-md select-none pointer-events-none">
             {isMac ? "⌘F" : "Ctrl+F"}
           </div>
         </div>

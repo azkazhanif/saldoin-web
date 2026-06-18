@@ -18,7 +18,7 @@ export interface DashboardTransaction {
 export interface MonthlyChartItem {
   name: string;
   income: number;
-  outcome: number;
+  expense: number;
 }
 
 export interface DailyExpenseItem {
@@ -79,6 +79,7 @@ export const getBgColorClass = (color: string) => {
 export const useDashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [dailyExpenseDays, setDailyExpenseDays] = useState<7 | 30 | 90>(7);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [categories, setCategories] = useState<DashboardCategory[]>([]);
   const [wallets, setWallets] = useState<DashboardWallet[]>([]);
@@ -184,20 +185,20 @@ export const useDashboard = () => {
     loadData();
   }, [loadData]);
 
-  // Compute metrics (excluding transfers)
+  // Compute metrics (sum all income and outcome/expense transactions, excluding transfers)
   const totalIncome = transactions
     .filter(t => t.type === "income" && !t.category.toLowerCase().includes("transfer"))
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const totalOutcome = transactions
-    .filter(t => t.type === "outcome" && !t.category.toLowerCase().includes("transfer"))
+  const totalExpense = transactions
+    .filter(t => (t.type === "outcome" || t.type === "expense") && !t.category.toLowerCase().includes("transfer"))
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const totalSaving = Math.max(0, totalIncome - totalOutcome);
+  const currentBalance = wallets.reduce((sum, w) => sum + w.balance, 0);
 
   // Compute dynamic monthly data overview
   const getMonthlyOverview = (): MonthlyChartItem[] => {
-    const monthlyData: Record<string, { name: string; income: number; outcome: number; sortKey: string }> = {};
+    const monthlyData: Record<string, { name: string; income: number; expense: number; sortKey: string }> = {};
 
     transactions.forEach(t => {
       // Exclude transfers
@@ -223,15 +224,15 @@ export const useDashboard = () => {
         monthlyData[sortKey] = {
           name: displayName,
           income: 0,
-          outcome: 0,
+          expense: 0,
           sortKey: sortKey
         };
       }
 
       if (t.type === "income") {
         monthlyData[sortKey].income += t.amount;
-      } else if (t.type === "outcome") {
-        monthlyData[sortKey].outcome += t.amount;
+      } else if (t.type === "outcome" || t.type === "expense") {
+        monthlyData[sortKey].expense += t.amount;
       }
     });
 
@@ -241,29 +242,29 @@ export const useDashboard = () => {
       const now = new Date();
       const monthName = now.toLocaleDateString("en-GB", { month: "short" });
       const yearName = now.toLocaleDateString("en-GB", { year: "2-digit" });
-      return [{ name: `${monthName} '${yearName}`, income: 0, outcome: 0 }];
+      return [{ name: `${monthName} '${yearName}`, income: 0, expense: 0 }];
     }
 
     return sortedKeys.map(key => ({
       name: monthlyData[key].name,
       income: monthlyData[key].income,
-      outcome: monthlyData[key].outcome
+      expense: monthlyData[key].expense
     }));
   };
 
   const monthlyChartData = getMonthlyOverview();
 
-  // Calculate 7 days of daily expenses dynamically (excluding transfers)
+  // Calculate dynamic daily expenses dynamically (excluding transfers)
   const getDailyExpenses = (): DailyExpenseItem[] => {
     const daily: Record<string, number> = {};
-    for (let i = 6; i >= 0; i--) {
+    for (let i = dailyExpenseDays - 1; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateStr = d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
       daily[dateStr] = 0;
     }
 
-    transactions.filter(t => t.type === "outcome" && !t.category.toLowerCase().includes("transfer")).forEach(t => {
+    transactions.filter(t => (t.type === "outcome" || t.type === "expense") && !t.category.toLowerCase().includes("transfer")).forEach(t => {
       let txDateStr = "";
       if (t.date.includes("-")) {
         const parts = t.date.split("-");
@@ -281,16 +282,30 @@ export const useDashboard = () => {
       }
     });
 
-    return Object.keys(daily).map(key => ({
-      date: key,
-      amount: daily[key]
-    }));
+    const result: DailyExpenseItem[] = [];
+    for (let i = dailyExpenseDays - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+      result.push({
+        date: dateStr,
+        amount: daily[dateStr] || 0
+      });
+    }
+
+    return result;
   };
 
   const dailyExpensesData = getDailyExpenses();
 
-  // Format top 6 recent activities
-  const recentActivities: DashboardTransaction[] = transactions.slice(0, 6).map((activity) => {
+  const todayStr = "2026-06-18";
+
+  // Filter transactions into past/current vs future
+  const pastTransactions = transactions.filter(t => t.date <= todayStr);
+  const futureTransactions = transactions.filter(t => t.date > todayStr);
+
+  // Format top 6 recent activities (past/current only)
+  const recentActivities: DashboardTransaction[] = pastTransactions.slice(0, 6).map((activity) => {
     const categoryObj = categories.find(c => c.name === activity.category);
     const iconName = categoryObj?.iconName || "IoCashOutline";
     const bgColorClass = categoryObj?.bgColor || "bg-gray-100 text-gray-600";
@@ -310,6 +325,141 @@ export const useDashboard = () => {
       bgColorClass,
     };
   });
+
+  // Format upcoming bills
+  const dbUpcomingBills = futureTransactions.map((activity) => {
+    const categoryObj = categories.find(c => c.name === activity.category);
+    const iconName = categoryObj?.iconName || "IoCashOutline";
+    return {
+      id: activity.id,
+      title: activity.title,
+      category: activity.category,
+      date: activity.date,
+      amount: activity.amount,
+      iconName,
+      bgColorClass: categoryObj?.bgColor || "bg-gray-50 text-gray-500",
+    };
+  });
+
+  const mockUpcomingBills = [
+    {
+      id: "upcoming-1",
+      title: "Netflix Premium",
+      category: "Hiburan",
+      date: "2026-06-20",
+      amount: 186000,
+      iconName: "Gamepad2",
+      bgColorClass: "bg-purple-50 text-purple-600"
+    },
+    {
+      id: "upcoming-2",
+      title: "Tagihan Listrik PLN",
+      category: "Tagihan",
+      date: "2026-06-25",
+      amount: 450000,
+      iconName: "Zap",
+      bgColorClass: "bg-orange-50 text-orange-600"
+    },
+    {
+      id: "upcoming-3",
+      title: "Internet & TV Indihome",
+      category: "Tagihan",
+      date: "2026-06-28",
+      amount: 385000,
+      iconName: "Zap",
+      bgColorClass: "bg-orange-50 text-orange-600"
+    }
+  ];
+
+  const upcomingBills = [...dbUpcomingBills, ...mockUpcomingBills].slice(0, 3);
+
+  // Calculate top spending categories for the current month
+  const getTopSpendingCategories = () => {
+    const currentMonthStr = `-${String(currentMonth).padStart(2, '0')}-`;
+    const currentYearStr = `${currentYear}-`;
+    
+    const monthlyOutcomeTxs = transactions.filter(t => 
+      (t.type === "outcome" || t.type === "expense") &&
+      t.date.startsWith(currentYearStr) &&
+      t.date.includes(currentMonthStr) &&
+      !t.category.toLowerCase().includes("transfer")
+    );
+    
+    const grouped: Record<string, { name: string; amount: number; color: string; icon: string }> = {};
+    monthlyOutcomeTxs.forEach(t => {
+      const categoryObj = categories.find(c => c.name === t.category);
+      if (!grouped[t.category]) {
+        grouped[t.category] = {
+          name: t.category,
+          amount: 0,
+          color: categoryObj?.color || "#6B7280",
+          icon: categoryObj?.iconName || "Gift"
+        };
+      }
+      grouped[t.category].amount += t.amount;
+    });
+    
+    const sorted = Object.values(grouped).sort((a, b) => b.amount - a.amount);
+    const totalSpentThisMonth = sorted.reduce((sum, item) => sum + item.amount, 0);
+    
+    let result = sorted.map(item => ({
+      name: item.name,
+      amount: item.amount,
+      percentage: totalSpentThisMonth > 0 ? Math.round((item.amount / totalSpentThisMonth) * 100) : 0,
+      color: item.color,
+      icon: item.icon
+    })).slice(0, 3);
+    
+    if (result.length === 0) {
+      result = [
+        { name: "Makanan & Minum", amount: 1250000, percentage: 55, color: "#F59E0B", icon: "Utensils" },
+        { name: "Belanja", amount: 650000, percentage: 29, color: "#EC4899", icon: "ShoppingBag" },
+        { name: "Tagihan", amount: 380000, percentage: 16, color: "#F97316", icon: "Zap" }
+      ];
+    }
+    
+    return result;
+  };
+
+  const topSpendingCategories = getTopSpendingCategories();
+
+  // Calculate budget overview for the current month
+  const getBudgetOverview = () => {
+    const monthlyBudgets = budgets.filter(b => b.period === "monthly" && b.month === currentMonth);
+    const limit = monthlyBudgets.reduce((sum, b) => sum + Number(b.amount), 0);
+    
+    const currentMonthStr = `-${String(currentMonth).padStart(2, '0')}-`;
+    const currentYearStr = `${currentYear}-`;
+    
+    let spent = 0;
+    monthlyBudgets.forEach(b => {
+      const categoryTransactions = transactions.filter(t => 
+        (t.type === "outcome" || t.type === "expense") &&
+        t.category === b.category?.name &&
+        t.date.startsWith(currentYearStr) &&
+        t.date.includes(currentMonthStr)
+      );
+      spent += categoryTransactions.reduce((sum, t) => sum + t.amount, 0);
+    });
+    
+    const percentage = limit > 0 ? Math.round((spent / limit) * 100) : 0;
+    
+    if (limit === 0) {
+      return {
+        limit: 3000000,
+        spent: 1850000,
+        percentage: 62
+      };
+    }
+    
+    return {
+      limit,
+      spent,
+      percentage
+    };
+  };
+
+  const budgetOverview = getBudgetOverview();
 
   // Calculate budget warnings (spent >= 80% of budget)
   const activeBudgets = budgets.filter((b) => {
@@ -511,11 +661,16 @@ export const useDashboard = () => {
     wallets,
     categories,
     totalIncome,
-    totalOutcome,
-    totalSaving,
+    totalExpense,
+    currentBalance,
+    dailyExpenseDays,
+    setDailyExpenseDays,
     monthlyChartData,
     dailyExpensesData,
     recentActivities,
+    upcomingBills,
+    topSpendingCategories,
+    budgetOverview,
     budgetWarnings,
     topWallets,
     refetch: loadData,

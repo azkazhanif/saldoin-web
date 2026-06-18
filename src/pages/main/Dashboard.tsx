@@ -8,6 +8,9 @@ import DailyExpensesChart from "../../components/dashboard/DailyExpensesChart";
 import RecentActivities from "../../components/dashboard/RecentActivities";
 import BudgetWarnings from "../../components/dashboard/BudgetWarnings";
 import TopWallets from "../../components/dashboard/TopWallets";
+import BudgetOverview from "../../components/dashboard/BudgetOverview";
+import UpcomingBills from "../../components/dashboard/UpcomingBills";
+import TopSpendingCategories from "../../components/dashboard/TopSpendingCategories";
 import {
   IoTrendingUpOutline,
   IoTrendingDownOutline,
@@ -20,11 +23,16 @@ const Dashboard: React.FC = () => {
     wallets,
     categories,
     totalIncome,
-    totalOutcome,
-    totalSaving,
+    totalExpense,
+    currentBalance,
+    dailyExpenseDays,
+    setDailyExpenseDays,
     monthlyChartData,
     dailyExpensesData,
     recentActivities,
+    upcomingBills,
+    topSpendingCategories,
+    budgetOverview,
     budgetWarnings,
     topWallets,
     addTransaction,
@@ -46,67 +54,89 @@ const Dashboard: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Metric Card: Income */}
-        <MetricCard
-          title="Total Income"
-          amount={totalIncome}
-          trendText="+12.5% vs last month"
-          trendIcon={<IoTrendingUpOutline className="w-4 h-4" />}
-          trendColorClass="text-green-500"
-          cardIcon={<IoTrendingUpOutline className="w-6 h-6" />}
-          iconBgClass="bg-green-50 text-green-600"
-        />
-
-        {/* Metric Card: Outcome */}
-        <MetricCard
-          title="Total Outcome"
-          amount={totalOutcome}
-          trendText="+8.2% vs last month"
-          trendIcon={<IoTrendingDownOutline className="w-4 h-4" />}
-          trendColorClass="text-red-500"
-          cardIcon={<IoTrendingDownOutline className="w-6 h-6" />}
-          iconBgClass="bg-red-50 text-red-600"
-        />
-
-        {/* Metric Card: Saving */}
-        <MetricCard
-          title="Total Saving"
-          amount={totalSaving}
-          trendText="46.3% saving rate"
-          trendIcon={<IoWalletOutline className="w-4 h-4" />}
-          trendColorClass="text-blue"
-          cardIcon={<IoWalletOutline className="w-6 h-6" />}
-          iconBgClass="bg-blue/10 text-blue"
-        />
-
-        {/* Left Column (spans 2 columns on desktop) */}
-        <div className="md:col-span-2 flex flex-col gap-6">
-          {/* Monthly Comparison Chart */}
-          <OverviewChart data={monthlyChartData} />
-
-          {/* Daily Expenses Chart Card */}
-          <DailyExpensesChart data={dailyExpensesData} />
-
-          {/* Budget Warnings Widget */}
-          <BudgetWarnings warnings={budgetWarnings} />
+      <div className="flex flex-col gap-2 lg:gap-6">
+        {/* Top Row: Metric Cards */}
+        <div className="flex flex-col lg:flex-row gap-2 lg:gap-6">
+          <div className="flex-1">
+            <MetricCard
+              title="Total Income"
+              amount={totalIncome}
+              trendText="+12.5% vs last month"
+              trendIcon={<IoTrendingUpOutline className="w-4 h-4" />}
+              trendColorClass="text-green-500"
+              cardIcon={<IoTrendingUpOutline className="w-6 h-6" />}
+              iconBgClass="bg-green-50 text-green-600"
+            />
+          </div>
+          <div className="flex-1">
+            <MetricCard
+              title="Total Expense"
+              amount={totalExpense}
+              trendText="+8.2% vs last month"
+              trendIcon={<IoTrendingUpOutline className="w-4 h-4" />}
+              trendColorClass="text-red-500"
+              cardIcon={<IoTrendingDownOutline className="w-6 h-6" />}
+              iconBgClass="bg-red-50 text-red-600"
+            />
+          </div>
+          <div className="flex-1">
+            <MetricCard
+              title="Current Balance"
+              amount={currentBalance}
+              trendText="Total money in your wallets"
+              trendIcon={<IoWalletOutline className="w-4 h-4" />}
+              trendColorClass="text-blue"
+              cardIcon={<IoWalletOutline className="w-6 h-6" />}
+              iconBgClass="bg-blue/10 text-blue"
+            />
+          </div>
         </div>
 
-        {/* Right Column (spans 1 column on desktop) */}
-        <div className="md:col-span-1 flex flex-col gap-6">
-          {/* Quick Actions Card */}
-          <QuickActions
-            categories={categories}
-            wallets={wallets}
-            addTransaction={addTransaction}
-            transferFunds={transferFunds}
-          />
+        {/* Content Columns wrapper */}
+        <div className="flex flex-col lg:flex-row gap-2 lg:gap-6 items-stretch lg:items-start">
+          {/* Left Column (approx 66% width) */}
+          <div className="contents lg:flex lg:flex-col lg:gap-6 lg:w-2/3">
+            <div className="order-5 lg:order-none w-full">
+              <OverviewChart data={monthlyChartData} />
+            </div>
+            <div className="order-6 lg:order-none w-full">
+              <DailyExpensesChart 
+                data={dailyExpensesData} 
+                days={dailyExpenseDays} 
+                setDays={setDailyExpenseDays} 
+              />
+            </div>
+            <div className="order-8 lg:order-none w-full">
+              <BudgetOverview data={budgetOverview} />
+            </div>
+            <div className="order-10 lg:order-none w-full">
+              <BudgetWarnings warnings={budgetWarnings} />
+            </div>
+          </div>
 
-          {/* Recent Activity Card */}
-          <RecentActivities data={recentActivities} />
-
-          {/* Top Use Wallets Widget */}
-          <TopWallets wallets={topWallets} />
+          {/* Right Column (approx 33% width) */}
+          <div className="contents lg:flex lg:flex-col lg:gap-6 lg:w-1/3">
+            <div className="order-4 lg:order-none w-full">
+              <QuickActions
+                categories={categories}
+                wallets={wallets}
+                addTransaction={addTransaction}
+                transferFunds={transferFunds}
+              />
+            </div>
+            <div className="order-7 lg:order-none w-full">
+              <RecentActivities data={recentActivities} />
+            </div>
+            <div className="order-9 lg:order-none w-full">
+              <UpcomingBills data={upcomingBills} />
+            </div>
+            <div className="order-11 lg:order-none w-full">
+              <TopSpendingCategories categories={topSpendingCategories} />
+            </div>
+            <div className="order-12 lg:order-none w-full">
+              <TopWallets wallets={topWallets} />
+            </div>
+          </div>
         </div>
       </div>
     </MainLayout>

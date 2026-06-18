@@ -40,11 +40,15 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const OverviewChart: React.FC<OverviewChartProps> = ({ data }) => {
+  const isSingleMonth = data.length === 1;
+  const barSize = isSingleMonth ? 32 : 16;
+  const barGap = isSingleMonth ? 4 : 2;
+
   return (
-    <div className="md:col-span-2 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md">
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col justify-between transition-all duration-300 hover:shadow-md">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h3 className="text-black font-extrabold text-lg">Income & Outcome Overview</h3>
+          <h3 className="text-black font-extrabold text-lg">Income vs Expense</h3>
           <p className="text-gray-400 text-xs mt-0.5">Monthly breakdown for the last 12 months</p>
         </div>
         {/* Custom Legend */}
@@ -55,7 +59,7 @@ const OverviewChart: React.FC<OverviewChartProps> = ({ data }) => {
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded bg-red-400" />
-            <span className="text-gray-600">Outcome</span>
+            <span className="text-gray-600">Expense</span>
           </div>
         </div>
       </div>
@@ -64,9 +68,10 @@ const OverviewChart: React.FC<OverviewChartProps> = ({ data }) => {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={data}
+            barGap={barGap}
             margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
           >
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
             <XAxis 
               dataKey="name" 
               tickLine={false} 
@@ -87,14 +92,14 @@ const OverviewChart: React.FC<OverviewChartProps> = ({ data }) => {
               name="Income" 
               fill="#0065e1" 
               radius={[4, 4, 0, 0]} 
-              maxBarSize={16}
+              barSize={barSize}
             />
             <Bar 
-              dataKey="outcome" 
-              name="Outcome" 
+              dataKey="expense" 
+              name="Expense" 
               fill="#f87171" 
               radius={[4, 4, 0, 0]} 
-              maxBarSize={16}
+              barSize={barSize}
             />
           </BarChart>
         </ResponsiveContainer>

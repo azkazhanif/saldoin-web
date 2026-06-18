@@ -5,9 +5,9 @@ import Sidebar from "../components/organisms/main/Sidebar";
 const MainLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="min-h-screen bg-white">
-      <div className="flex flex-col md:grid md:grid-cols-5 min-h-screen">
+      <div className="flex flex-col lg:grid lg:grid-cols-5 min-h-screen">
         <Sidebar />
-        <div className="flex-1 md:col-span-4 p-4 md:p-6 pb-24 md:pb-6 flex flex-col gap-6">
+        <div className="flex-1 lg:col-span-4 p-4 lg:p-6 pb-24 lg:pb-6 flex flex-col gap-6">
           <Header />
           <main className="flex-1">
             {children}
