@@ -17,6 +17,7 @@ import Wallet from "./pages/main/Wallet.tsx";
 import Transactions from "./pages/main/Transactions.tsx";
 import Categories from "./pages/main/Categories.tsx";
 import Budget from "./pages/main/Budget.tsx";
+import Profile from "./pages/main/Profile.tsx";
 
 const router = createBrowserRouter([
   {
@@ -105,6 +106,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <Budget />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "profile",
+    element: (
+      <ProtectedRoute>
+        <Profile />
       </ProtectedRoute>
     ),
   },

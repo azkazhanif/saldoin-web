@@ -7,6 +7,9 @@ interface Profile {
   id: string;
   name: string;
   email: string;
+  journaling_streak?: number;
+  longest_streak?: number;
+  last_journal_date?: string;
   created_at: string;
 }
 

@@ -12,6 +12,9 @@ create table public.profiles (
   id uuid references auth.users on delete cascade primary key,
   name text,
   email text,
+  journaling_streak integer default 0 not null,
+  longest_streak integer default 0 not null,
+  last_journal_date date,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -177,3 +180,109 @@ insert into public.categories (name, icon, color, type, is_default) values
   ('Bisnis', 'IoStorefrontOutline', 'bg-green-700', 'income', true),
   ('Transfer Masuk', 'IoRepeatOutline', 'bg-sky-600', 'income', true),
   ('Lain-lain (Income)', 'IoCashOutline', 'bg-gray-500', 'income', true);
+
+-- ========================================================================
+-- JOURNALING STREAK LOGIC & AUTOMATION TRIGGERS (Database-side)
+-- ========================================================================
+
+-- Function to calculate the journaling streak for a specific user
+create or replace function public.calculate_user_streak(target_user_id uuid)
+returns integer as $$
+declare
+  streak_count integer := 0;
+  prev_date date;
+  curr_date date;
+  tx_dates cursor for 
+    select distinct date 
+    from public.transactions 
+    where user_id = target_user_id 
+    order by date desc;
+begin
+  open tx_dates;
+  
+  -- Fetch the first (most recent) date
+  fetch tx_dates into curr_date;
+  
+  if not found then
+    close tx_dates;
+    return 0;
+  end if;
+  
+  -- If the most recent transaction is older than yesterday, streak is broken
+  if curr_date < current_date - 1 then
+    close tx_dates;
+    return 0;
+  end if;
+  
+  streak_count := 1;
+  prev_date := curr_date;
+  
+  loop
+    fetch tx_dates into curr_date;
+    exit when not found;
+    
+    -- Check if this date is exactly 1 day before the previous date
+    if prev_date - curr_date = 1 then
+      streak_count := streak_count + 1;
+      prev_date := curr_date;
+    elsif prev_date - curr_date > 1 then
+      -- Streak broken
+      exit;
+    end if;
+  end loop;
+  
+  close tx_dates;
+  return streak_count;
+end;
+$$ language plpgsql;
+
+-- Trigger function to automatically update profiles with journaling stats on transaction changes
+create or replace function public.update_profile_journaling_stats()
+returns trigger as $$
+declare
+  target_user_id uuid;
+  new_streak integer;
+  max_streak integer;
+  most_recent_date date;
+begin
+  -- Determine user_id based on operation
+  if TG_OP = 'DELETE' then
+    target_user_id := old.user_id;
+  else
+    target_user_id := new.user_id;
+  end if;
+
+  -- Calculate the new streak
+  new_streak := public.calculate_user_streak(target_user_id);
+  
+  -- Get the most recent transaction date
+  select max(date) into most_recent_date 
+  from public.transactions 
+  where user_id = target_user_id;
+
+  -- Get the current longest_streak
+  select coalesce(longest_streak, 0) into max_streak 
+  from public.profiles 
+  where id = target_user_id;
+
+  -- Update longest_streak if the new streak is higher
+  if new_streak > max_streak then
+    max_streak := new_streak;
+  end if;
+
+  -- Update the profiles table
+  update public.profiles
+  set 
+    journaling_streak = new_streak,
+    longest_streak = max_streak,
+    last_journal_date = most_recent_date
+  where id = target_user_id;
+
+  return null;
+end;
+$$ language plpgsql;
+
+-- Trigger to execute update_profile_journaling_stats on insert, update, or delete of transactions
+create or replace trigger on_transaction_change
+  after insert or update or delete on public.transactions
+  for each row execute procedure public.update_profile_journaling_stats();
